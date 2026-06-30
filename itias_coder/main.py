@@ -1,7 +1,7 @@
 """Application bootstrap (dev + frozen exe)."""
 import sys
 
-from itias_coder.qt_bindings import QApplication, Qt, QMainWindow
+from itias_coder.qt_bindings import QApplication, Qt, qt_exec
 
 
 def run() -> None:
@@ -16,4 +16,4 @@ def run() -> None:
 
     window = MainWindow()
     window.show()
-    sys.exit(app.exec())
+    sys.exit(qt_exec(app))

@@ -36,7 +36,6 @@ QDialogButtonBox = QtWidgets.QDialogButtonBox
 QFont = QtGui.QFont
 QColor = QtGui.QColor
 QKeySequence = QtGui.QKeySequence
-QShortcut = QtGui.QShortcut
 QCloseEvent = QtGui.QCloseEvent
 QUrl = QtCore.QUrl
 QSettings = QtCore.QSettings
@@ -49,6 +48,7 @@ QMediaPlayer = QtMultimedia.QMediaPlayer
 if QT_API == 6:
     from PySide6.QtMultimedia import QAudioOutput
 
+    QShortcut = QtGui.QShortcut
     QSizePolicyExpanding = QSizePolicy.Policy.Expanding
     QSizePolicyFixed = QSizePolicy.Policy.Fixed
     MediaEndOfMedia = QMediaPlayer.MediaStatus.EndOfMedia
@@ -58,6 +58,7 @@ if QT_API == 6:
 else:
     from PySide2.QtMultimedia import QMediaContent
 
+    QShortcut = QtWidgets.QShortcut
     QAudioOutput = None  # type: ignore[misc, assignment]
     QSizePolicyExpanding = QSizePolicy.Expanding
     QSizePolicyFixed = QSizePolicy.Fixed
@@ -65,6 +66,13 @@ else:
     MediaNoError = QMediaPlayer.NoError
     MB_YES = QMessageBox.Yes
     MB_NO = QMessageBox.No
+
+
+def qt_exec(app_or_dialog) -> int:
+    """Qt5 uses exec_(); Qt6 uses exec()."""
+    if QT_API == 6:
+        return app_or_dialog.exec()
+    return app_or_dialog.exec_()
 
 
 class SegmentPlayer:

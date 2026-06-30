@@ -40,7 +40,7 @@ New-Item -ItemType Directory -Force -Path $BundledFfmpeg | Out-Null
 Copy-Item (Join-Path $FfmpegBin "ffmpeg.exe") $BundledFfmpeg -Force
 Copy-Item (Join-Path $FfmpegBin "ffprobe.exe") $BundledFfmpeg -Force
 
-$Version = "0.1.1"
+$Version = "0.1.2"
 $ZipName = "ITIAS-Coder-v$Version-win64-win7.zip"
 $ZipPath = Join-Path $ProjectRoot "dist" $ZipName
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }

@@ -5,7 +5,7 @@ import os
 
 from itias_coder.qt_bindings import (
     QFileDialog, QFont, QGroupBox, QHBoxLayout, QLabel, QMainWindow,
-    QMessageBox, MB_NO, MB_YES, QPushButton, Qt, QVBoxLayout, QWidget,
+    QMessageBox, MB_NO, MB_YES, QPushButton, Qt, QVBoxLayout, QWidget, qt_exec,
 )
 
 from ..profile import list_profiles, load_profile
@@ -102,7 +102,7 @@ class MainWindow(QMainWindow):
         root.addStretch()
 
         # Footer
-        footer = QLabel("v0.1.1 · ITIAS Coder · open source")
+        footer = QLabel("v0.1.2 · ITIAS Coder · open source")
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         footer.setStyleSheet("color: #aaa; font-size: 11px;")
         root.addWidget(footer)
@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
     def _open_slicer(self):
         from .slicer_dialog import SlicerDialog
         dlg = SlicerDialog(self)
-        dlg.exec()
+        qt_exec(dlg)
 
     def _open_encoder(self):
         folder = QFileDialog.getExistingDirectory(self, "选择切片文件夹")
