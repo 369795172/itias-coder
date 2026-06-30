@@ -11,8 +11,8 @@
 
 | 文件 | 说明 |
 | --- | --- |
-| `config/feishu_inbound_itias_coder.yaml` | Instance 配置 |
-| `config/feishu_inbound_itias_coder_surfaces.yaml` | Worktree `projects/itias-coder` |
+| `config/feishu_inbound_itias-coder.yaml` | Instance 配置 |
+| `config/feishu_inbound_itias-coder_surfaces.yaml` | Worktree `projects/itias-coder` |
 
 Pipeline A：本仓库 `.github/workflows/feishu-inbound.yml`
 
