@@ -3,11 +3,9 @@ from __future__ import annotations
 
 import os
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import (
-    QFileDialog, QGroupBox, QHBoxLayout, QLabel,
-    QMainWindow, QMessageBox, QPushButton, QVBoxLayout, QWidget,
+from itias_coder.qt_bindings import (
+    QFileDialog, QFont, QGroupBox, QHBoxLayout, QLabel, QMainWindow,
+    QMessageBox, MB_NO, MB_YES, QPushButton, Qt, QVBoxLayout, QWidget,
 )
 
 from ..profile import list_profiles, load_profile

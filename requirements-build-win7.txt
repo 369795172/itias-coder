@@ -1,0 +1,3 @@
+# Build-time dependencies for Windows portable zip
+-r requirements-win7.txt
+pyinstaller>=6.3.0

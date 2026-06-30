@@ -4,14 +4,12 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QCloseEvent, QColor, QFont, QKeySequence, QShortcut
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
-from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtWidgets import (
-    QDialog, QFileDialog, QGridLayout, QGroupBox, QHBoxLayout,
-    QLabel, QMainWindow, QMessageBox, QProgressBar, QPushButton,
-    QScrollArea, QSizePolicy, QStatusBar, QVBoxLayout, QWidget,
+from itias_coder.qt_bindings import (
+    QCloseEvent, QColor, QDialog, QFileDialog, QFont, QGridLayout, QGroupBox,
+    QHBoxLayout, QKeySequence, QLabel, QMainWindow, QMessageBox, MB_NO, MB_YES,
+    QProgressBar, QPushButton, QScrollArea, QShortcut, QSizePolicy,
+    QSizePolicyExpanding, QSizePolicyFixed, QStatusBar, Qt, QVBoxLayout,
+    QWidget, QVideoWidget, SegmentPlayer,
 )
 
 from ..models import CodeDef, Profile, Segment, Session
@@ -27,7 +25,7 @@ class CodeButton(QPushButton):
         self.setText(code.display)
         self.setMinimumHeight(36)
         self.setMinimumWidth(140)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicyExpanding, QSizePolicyFixed)
         self._base_color = code.color
         self._apply_style(False)
 
@@ -129,7 +127,7 @@ class EncoderWindow(QMainWindow):
         self._video_widget = QVideoWidget()
         self._video_widget.setMinimumHeight(360)
         self._video_widget.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            QSizePolicyExpanding, QSizePolicyExpanding
         )
         self._video_widget.setStyleSheet("background: #000;")
         left_lay.addWidget(self._video_widget)
@@ -245,13 +243,14 @@ class EncoderWindow(QMainWindow):
                 sc.activated.connect(lambda c=code: self._on_code(c))
 
     def _setup_player(self):
-        self._audio_output = QAudioOutput()
-        self._player = QMediaPlayer()
-        self._player.setAudioOutput(self._audio_output)
-        self._player.setVideoOutput(self._video_widget)
-        self._player.mediaStatusChanged.connect(self._on_media_status)
-        self._player.errorOccurred.connect(self._on_player_error)
-        self._audio_output.setVolume(0.8)
+        self._segment_player = SegmentPlayer(self._video_widget)
+        self._segment_player.set_end_of_media_callback(self._on_segment_end)
+
+    def _on_segment_end(self):
+        if self._current_idx is not None:
+            seg = self.session.segments[self._current_idx]
+            if not seg.is_coded:
+                self._segment_player.replay()
 
     # ── Segment Navigation ────────────────────────────────────────────────────
 
@@ -285,26 +284,11 @@ class EncoderWindow(QMainWindow):
             )
             self._status_bar.showMessage(f"正在播放第 {seg.index} 段，请点击右侧按钮编码")
 
-        self._player.setSource(QUrl.fromLocalFile(seg.filepath))
-        self._player.play()
-
-    def _on_media_status(self, status: QMediaPlayer.MediaStatus):
-        if status == QMediaPlayer.MediaStatus.EndOfMedia:
-            # Loop: replay the current segment until coded
-            if self._current_idx is not None:
-                seg = self.session.segments[self._current_idx]
-                if not seg.is_coded:
-                    self._player.setPosition(0)
-                    self._player.play()
-
-    def _on_player_error(self, error, error_string: str):
-        if error != QMediaPlayer.Error.NoError:
-            self._status_bar.showMessage(f"播放错误: {error_string}")
+        self._segment_player.play_file(seg.filepath)
 
     def _replay_current(self):
         """Restart playback of current segment."""
-        self._player.setPosition(0)
-        self._player.play()
+        self._segment_player.replay()
 
     # ── Coding ────────────────────────────────────────────────────────────────
 
@@ -336,13 +320,13 @@ class EncoderWindow(QMainWindow):
 
         # Check completion
         if self.session.is_complete:
-            self._player.stop()
+            self._segment_player.stop()
             reply = QMessageBox.question(
                 self, "编码完成！",
                 f"全部 {self.session.total} 段已编码完成！\n\n是否立即导出结果？",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                MB_YES | MB_NO,
             )
-            if reply == QMessageBox.StandardButton.Yes:
+            if reply == MB_YES:
                 self._export()
             return
 
@@ -404,13 +388,13 @@ class EncoderWindow(QMainWindow):
                 f"还有 {uncoded} 段尚未编码。\n"
                 f"进度已自动保存，下次打开同一文件夹可继续。\n\n"
                 f"是否确认关闭？",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
+                MB_YES | MB_NO,
+                MB_NO,
             )
-            if reply == QMessageBox.StandardButton.No:
+            if reply == MB_NO:
                 event.ignore()
                 return
 
-        self._player.stop()
+        self._segment_player.stop()
         save_session(self.session)
         event.accept()

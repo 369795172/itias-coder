@@ -4,9 +4,9 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectRoot
 
-Write-Host "==> Installing build dependencies"
+Write-Host "==> Installing build dependencies (Win7-compatible: Python 3.8 + PySide2)"
 python -m pip install --upgrade pip
-python -m pip install -r requirements-build.txt
+python -m pip install -r requirements-build-win7.txt
 
 Write-Host "==> Downloading ffmpeg (Windows essentials)"
 $FfmpegDir = Join-Path $ProjectRoot "packaging" "ffmpeg-win"
@@ -40,8 +40,8 @@ New-Item -ItemType Directory -Force -Path $BundledFfmpeg | Out-Null
 Copy-Item (Join-Path $FfmpegBin "ffmpeg.exe") $BundledFfmpeg -Force
 Copy-Item (Join-Path $FfmpegBin "ffprobe.exe") $BundledFfmpeg -Force
 
-$Version = "0.1.0"
-$ZipName = "ITIAS-Coder-v$Version-win64.zip"
+$Version = "0.1.1"
+$ZipName = "ITIAS-Coder-v$Version-win64-win7.zip"
 $ZipPath = Join-Path $ProjectRoot "dist" $ZipName
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
 Compress-Archive -Path $DistDir -DestinationPath $ZipPath -Force

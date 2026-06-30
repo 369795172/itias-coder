@@ -26,13 +26,17 @@ python -m itias_coder
 
 ## Windows portable build
 
+**系统要求**：Windows 7 SP1 及以上（64 位）。学校机房常见 Win7 可用；旧包用 Python 3.12 打包会在 Win7 上报 `api-ms-win-core-path-l1-1-0.dll` 缺失。
+
 ```powershell
 .\packaging\build_windows.ps1
 ```
 
-Or use GitHub Actions → **ITIAS Coder Windows** workflow → download artifact `ITIAS-Coder-win64`.
+GitHub Actions → artifact `ITIAS-Coder-win64` → `ITIAS-Coder-v0.1.1-win64-win7.zip`
 
-Unzip and run `ITIAS-Coder.exe` (keep `_internal/` and `ffmpeg/` alongside the exe).
+解压整个文件夹，双击 `ITIAS-Coder.exe`（需保留 `_internal/`、`ffmpeg/`）。
+
+若仍无法播放视频，可安装 [VC++ 2015–2022 运行库](https://aka.ms/vs/17/release/vc_redist.x64.exe)。
 
 ## Encoding framework
 

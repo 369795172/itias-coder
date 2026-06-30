@@ -1,10 +1,7 @@
 """Application bootstrap (dev + frozen exe)."""
 import sys
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication
-
-from itias_coder.ui.main_window import MainWindow
+from itias_coder.qt_bindings import QApplication, Qt, QMainWindow
 
 
 def run() -> None:
@@ -12,7 +9,10 @@ def run() -> None:
     app.setApplicationName("ITIAS Coder")
     app.setOrganizationName("ITIAS-Coder")
     app.setStyle("Fusion")
-    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+    if hasattr(Qt, "ApplicationAttribute"):
+        app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+
+    from itias_coder.ui.main_window import MainWindow
 
     window = MainWindow()
     window.show()

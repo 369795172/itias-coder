@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 from typing import Callable, Optional
 
-from PySide6.QtCore import QObject, QThread, Signal
+from itias_coder.qt_bindings import QObject, QSettings, QThread, Signal
 
 
 def find_ffmpeg() -> Optional[str]:

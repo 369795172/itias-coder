@@ -3,11 +3,10 @@ from __future__ import annotations
 
 import os
 
-from PySide6.QtCore import QSettings, QThread, Qt
-from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QFileDialog, QGroupBox,
-    QHBoxLayout, QLabel, QLineEdit, QMessageBox, QProgressBar,
-    QPushButton, QSpinBox, QTextEdit, QVBoxLayout,
+from itias_coder.qt_bindings import (
+    QDialog, QDialogButtonBox, QFileDialog, QGroupBox, QHBoxLayout, QLabel,
+    QLineEdit, QMessageBox, QProgressBar, QPushButton, QSettings, QSpinBox,
+    QTextEdit, QThread, Qt, QVBoxLayout,
 )
 
 from ..slicer import SliceWorker, collect_segments, find_ffmpeg

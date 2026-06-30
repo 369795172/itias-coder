@@ -14,9 +14,9 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.8"
 
-      - name: Build portable zip
+      - name: Build portable zip (Win7 SP1+ compatible)
         shell: pwsh
         run: ./packaging/build_windows.ps1
 
@@ -24,5 +24,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ITIAS-Coder-win64
-          path: dist/ITIAS-Coder-v0.1.0-win64.zip
+          path: dist/ITIAS-Coder-v0.1.1-win64-win7.zip
           retention-days: 30

@@ -8,22 +8,37 @@ from PyInstaller.utils.hooks import collect_all
 project_dir = Path(SPECPATH).resolve().parent
 entry = str(project_dir / "packaging" / "entry.py")
 
-pyside6_datas, pyside6_binaries, pyside6_hiddenimports = collect_all("PySide6")
+# CI installs either PySide2 (Win7) or PySide6 (dev); collect whichever is present.
+_pyside_pkg = None
+for _candidate in ("PySide2", "PySide6"):
+    try:
+        __import__(_candidate)
+        _pyside_pkg = _candidate
+        break
+    except ImportError:
+        continue
+if _pyside_pkg is None:
+    raise RuntimeError("Neither PySide2 nor PySide6 is installed for packaging")
+
+pyside_datas, pyside_binaries, pyside_hiddenimports = collect_all(_pyside_pkg)
+_mm = f"{_pyside_pkg}.QtMultimedia"
+_mw = f"{_pyside_pkg}.QtMultimediaWidgets"
 
 a = Analysis(
     [entry],
     pathex=[str(project_dir)],
-    binaries=pyside6_binaries,
+    binaries=pyside_binaries,
     datas=[
         (str(project_dir / "config" / "profiles"), "config/profiles"),
-        *pyside6_datas,
+        *pyside_datas,
     ],
     hiddenimports=[
-        *pyside6_hiddenimports,
-        "PySide6.QtMultimedia",
-        "PySide6.QtMultimediaWidgets",
+        *pyside_hiddenimports,
+        _mm,
+        _mw,
         "itias_coder",
         "itias_coder.main",
+        "itias_coder.qt_bindings",
         "itias_coder.ui.main_window",
         "itias_coder.ui.encoder_window",
         "itias_coder.ui.slicer_dialog",
