@@ -1,4 +1,4 @@
-"""Entry point: python -m itias_coder"""
+"""PyInstaller entry script (must use absolute imports)."""
 
 from itias_coder.main import run
 
