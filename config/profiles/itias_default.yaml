@@ -1,0 +1,147 @@
+id: itias_default
+name: "ITIAS 互动分析系统"
+version: "1.0"
+reference: "顾小清 & 王炜 (2004)"
+description: "课堂互动分析系统，18类行为编码，适用于技术增强型课堂"
+
+# 分析时序列首尾各补一个13类代码（沉寂或混乱）
+analysis_padding_code: 13
+
+codes:
+  # ── 教师间接影响 (1–4) ───────────────────────────────────────────
+  - id: 1
+    label: "教师接受情感"
+    display: "1 接受情感"
+    category: "teacher_indirect"
+    color: "#A5D6A7"
+    shortcut: "1"
+
+  - id: 2
+    label: "教师鼓励表扬"
+    display: "2 鼓励表扬"
+    category: "teacher_indirect"
+    color: "#A5D6A7"
+    shortcut: "2"
+
+  - id: 3
+    label: "采纳意见"
+    display: "3 采纳意见"
+    category: "teacher_indirect"
+    color: "#A5D6A7"
+    shortcut: "3"
+
+  - id: 4
+    label: "提问开放性的问题"
+    display: "4 开放性提问"
+    category: "teacher_indirect"
+    color: "#A5D6A7"
+    shortcut: "4"
+
+  # ── 教师直接影响 (5–8) ───────────────────────────────────────────
+  - id: 5
+    label: "提问封闭性的问题"
+    display: "5 封闭性提问"
+    category: "teacher_direct"
+    color: "#FFCC80"
+    shortcut: "5"
+
+  - id: 6
+    label: "讲授"
+    display: "6 讲授"
+    category: "teacher_direct"
+    color: "#FFCC80"
+    shortcut: "6"
+
+  - id: 7
+    label: "指示"
+    display: "7 指示"
+    category: "teacher_direct"
+    color: "#FFCC80"
+    shortcut: "7"
+
+  - id: 8
+    label: "批评"
+    display: "8 批评"
+    category: "teacher_direct"
+    color: "#EF9A9A"
+    shortcut: "8"
+
+  # ── 学生言语 (9–12) ──────────────────────────────────────────────
+  - id: 9
+    label: "应答被动"
+    display: "9 应答被动"
+    category: "student_talk"
+    color: "#90CAF9"
+    shortcut: "9"
+
+  - id: 10
+    label: "应答主动"
+    display: "10 应答主动"
+    category: "student_talk"
+    color: "#90CAF9"
+    shortcut: "0"
+
+  - id: 11
+    label: "主动提问"
+    display: "11 主动提问"
+    category: "student_talk"
+    color: "#90CAF9"
+    shortcut: "q"
+
+  - id: 12
+    label: "与同伴讨论"
+    display: "12 同伴讨论"
+    category: "student_talk"
+    color: "#90CAF9"
+    shortcut: "w"
+
+  # ── 沉寂与混乱 (13–15) ──────────────────────────────────────────
+  - id: 13
+    label: "无助于教学的混乱"
+    display: "13 无效混乱"
+    category: "silence"
+    color: "#CFD8DC"
+    shortcut: "e"
+
+  - id: 14
+    label: "思考问题"
+    display: "14 思考问题"
+    category: "silence"
+    color: "#CFD8DC"
+    shortcut: "r"
+
+  - id: 15
+    label: "做练习"
+    display: "15 做练习"
+    category: "silence"
+    color: "#CFD8DC"
+    shortcut: "t"
+
+  # ── 技术相关 (16–18) ────────────────────────────────────────────
+  - id: 16
+    label: "教师操纵技术"
+    display: "16 教师操纵技术"
+    category: "technology"
+    color: "#CE93D8"
+    shortcut: "a"
+
+  - id: 17
+    label: "学生操纵技术"
+    display: "17 学生操纵技术"
+    category: "technology"
+    color: "#CE93D8"
+    shortcut: "s"
+
+  - id: 18
+    label: "技术作用学生"
+    display: "18 技术作用学生"
+    category: "technology"
+    color: "#CE93D8"
+    shortcut: "d"
+
+category_labels:
+  teacher_indirect: "教师间接影响"
+  teacher_direct: "教师直接影响"
+  student_talk: "学生言语"
+  silence: "沉寂与混乱"
+  technology: "技术相关"

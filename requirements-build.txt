@@ -1,0 +1,3 @@
+# Build-time dependencies (Windows packaging)
+-r requirements.txt
+pyinstaller>=6.3.0
