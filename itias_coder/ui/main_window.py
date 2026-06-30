@@ -102,7 +102,7 @@ class MainWindow(QMainWindow):
         root.addStretch()
 
         # Footer
-        footer = QLabel("v0.1.0 · ITIAS Coder · open source")
+        footer = QLabel("v0.1.1 · ITIAS Coder · open source")
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         footer.setStyleSheet("color: #aaa; font-size: 11px;")
         root.addWidget(footer)
