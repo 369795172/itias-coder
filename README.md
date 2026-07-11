@@ -9,6 +9,8 @@ Open-source classroom video **ITIAS** interaction analysis coding tool (MVP). A 
 - **Undo**: Revert the last code and replay that segment
 - **Auto-save / resume**: Progress saved after each code; resume from `.itias_save.json`
 - **Export**: Excel + TXT (CCIES-compatible column layout)
+- **Analysis**: Single-lesson behavior matrix (60s bins), proportion charts, time-series lines
+- **Multi-lesson compare**: Import up to 30 Excel exports; side-by-side stats and overlay line charts
 - **Profiles**: Pluggable YAML encoding frameworks (ITIAS default; IFIAS/custom later)
 
 ## Requirements
@@ -32,7 +34,7 @@ python -m itias_coder
 .\packaging\build_windows.ps1
 ```
 
-GitHub Actions → artifact `ITIAS-Coder-win64` → `ITIAS-Coder-v0.1.2-win64-win7.zip`
+GitHub Actions → artifact `ITIAS-Coder-win64` → `ITIAS-Coder-v0.2.0-win64-win7.zip`
 
 解压整个文件夹，双击 `ITIAS-Coder.exe`（需保留 `_internal/`、`ffmpeg/`）。
 
@@ -44,8 +46,8 @@ Default profile: `config/profiles/itias_default.yaml` (顾小清 & 王炜 2004, 
 
 ## Roadmap
 
-- Analysis module (interaction matrix, behavior charts; ITIAS head/tail code 13 padding)
-- Multi-lesson comparison reports
+- ~~Analysis module (interaction matrix, behavior charts; ITIAS head/tail code 13 padding)~~ ✓ v0.2.0
+- ~~Multi-lesson comparison reports~~ ✓ v0.2.0
 - Profile picker UI, reliability metrics, optional GPU slicing
 
 Reference: [CCIES tutorial](https://luoyaocray.github.io/post/cciestu-wen-jiao-xue/)

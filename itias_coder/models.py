@@ -94,6 +94,7 @@ class Session:
     profile_id: str
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     segments_folder: str = ""
+    segment_duration: int = 3
 
     @property
     def total(self) -> int:
@@ -119,6 +120,7 @@ class Session:
             "profile_id": self.profile_id,
             "segments_folder": self.segments_folder,
             "created_at": self.created_at,
+            "segment_duration": self.segment_duration,
             "segments": [s.to_dict() for s in self.segments],
         }
 
@@ -130,4 +132,5 @@ class Session:
             profile_id=d.get("profile_id", "itias_default"),
             created_at=d.get("created_at", datetime.now().isoformat()),
             segments_folder=d.get("segments_folder", ""),
+            segment_duration=d.get("segment_duration", 3),
         )

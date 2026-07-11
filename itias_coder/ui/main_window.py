@@ -5,7 +5,8 @@ import os
 
 from itias_coder.qt_bindings import (
     QFileDialog, QFont, QGroupBox, QHBoxLayout, QLabel, QMainWindow,
-    QMessageBox, MB_NO, MB_YES, QPushButton, Qt, QVBoxLayout, QWidget, qt_exec,
+    QMessageBox, MB_NO, MB_YES, QPushButton, QSettings, Qt, QVBoxLayout,
+    QWidget, qt_exec,
 )
 
 from ..profile import list_profiles, load_profile
@@ -99,10 +100,49 @@ class MainWindow(QMainWindow):
         encode_lay.addLayout(btn_row)
         root.addWidget(encode_group)
 
+        # Step 3: Analysis
+        analysis_group = QGroupBox("第三步：分析报告")
+        analysis_lay = QVBoxLayout(analysis_group)
+        analysis_desc = QLabel(
+            "加载已编码课程，查看行为矩阵、占比与时序图；或导入多节 Excel 进行对比分析。"
+        )
+        analysis_desc.setWordWrap(True)
+        analysis_desc.setStyleSheet("color: #555;")
+
+        analysis_row = QHBoxLayout()
+        single_btn = QPushButton("分析单课...")
+        single_btn.setMinimumHeight(40)
+        single_btn.setStyleSheet("""
+            QPushButton {
+                background: #00897B; color: white;
+                border-radius: 6px; font-size: 14px;
+            }
+            QPushButton:hover { background: #00695C; }
+        """)
+        single_btn.clicked.connect(self._open_single_analysis)
+
+        compare_btn = QPushButton("多课对比...")
+        compare_btn.setMinimumHeight(40)
+        compare_btn.setStyleSheet("""
+            QPushButton {
+                background: #5E35B1; color: white;
+                border-radius: 6px; font-size: 14px;
+            }
+            QPushButton:hover { background: #4527A0; }
+        """)
+        compare_btn.clicked.connect(self._open_compare)
+
+        analysis_row.addWidget(single_btn)
+        analysis_row.addWidget(compare_btn)
+
+        analysis_lay.addWidget(analysis_desc)
+        analysis_lay.addLayout(analysis_row)
+        root.addWidget(analysis_group)
+
         root.addStretch()
 
         # Footer
-        footer = QLabel("v0.1.2 · ITIAS Coder · open source")
+        footer = QLabel("v0.2.0 · ITIAS Coder · open source")
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         footer.setStyleSheet("color: #aaa; font-size: 11px;")
         root.addWidget(footer)
@@ -167,11 +207,14 @@ class MainWindow(QMainWindow):
                     f"检测到已保存进度（{coded}/{len(segments)} 段已编码），将从上次中断处继续。"
                 )
         else:
+            settings = QSettings("ITIAS-Coder", "itias-coder")
+            segment_duration = settings.value("slicer/duration", 3, type=int)
             segments = [Segment(index=i, filepath=fp) for i, fp in enumerate(files, 1)]
             session = Session(
                 segments=segments,
                 profile_id=profile.id,
                 segments_folder=folder,
+                segment_duration=segment_duration,
             )
 
         # Override with Excel if provided
@@ -194,3 +237,53 @@ class MainWindow(QMainWindow):
         window = EncoderWindow(session, profile)
         window.show()
         self._encoder_window = window
+
+    def _open_single_analysis(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择课程数据",
+            os.path.expanduser("~"),
+            "课程数据 (*.itias_save.json *.xlsx);;JSON (*.itias_save.json);;Excel (*.xlsx)",
+        )
+        if not path:
+            return
+        try:
+            session, profile = self._load_session_for_analysis(path)
+        except Exception as e:
+            QMessageBox.warning(self, "加载失败", str(e))
+            return
+        if not session.segments:
+            QMessageBox.warning(self, "加载失败", "文件中没有编码数据。")
+            return
+        from .analysis_window import AnalysisWindow
+        window = AnalysisWindow(session, profile, self)
+        window.show()
+        self._analysis_window = window
+
+    def _open_compare(self):
+        from .compare_window import CompareWindow
+        profile = load_profile("itias_default")
+        window = CompareWindow(profile, self)
+        window.show()
+        self._compare_window = window
+
+    def _load_session_for_analysis(self, path: str):
+        import json
+
+        from ..models import Session
+
+        profile = load_profile("itias_default")
+        if path.endswith(".json"):
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+            session = Session.from_dict(data)
+            if session.profile_id:
+                try:
+                    profile = load_profile(session.profile_id)
+                except Exception:
+                    pass
+            return session, profile
+
+        from .compare_window import _session_from_excel
+        session = _session_from_excel(path)
+        return session, profile

@@ -24,5 +24,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ITIAS-Coder-win64
-          path: dist/ITIAS-Coder-v0.1.2-win64-win7.zip
+          path: dist/ITIAS-Coder-v0.2.0-win64-win7.zip
           retention-days: 30
