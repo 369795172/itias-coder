@@ -33,6 +33,12 @@ QLineEdit = QtWidgets.QLineEdit
 QSpinBox = QtWidgets.QSpinBox
 QTextEdit = QtWidgets.QTextEdit
 QDialogButtonBox = QtWidgets.QDialogButtonBox
+QTabWidget = QtWidgets.QTabWidget
+QTableWidget = QtWidgets.QTableWidget
+QTableWidgetItem = QtWidgets.QTableWidgetItem
+QHeaderView = QtWidgets.QHeaderView
+QComboBox = QtWidgets.QComboBox
+QSplitter = QtWidgets.QSplitter
 QFont = QtGui.QFont
 QColor = QtGui.QColor
 QKeySequence = QtGui.QKeySequence
@@ -46,6 +52,16 @@ QVideoWidget = QtMultimediaWidgets.QVideoWidget
 QMediaPlayer = QtMultimedia.QMediaPlayer
 
 if QT_API == 6:
+    from PySide6.QtCharts import (
+        QBarCategoryAxis,
+        QBarSeries,
+        QBarSet,
+        QChart,
+        QChartView,
+        QLineSeries,
+        QPieSeries,
+        QValueAxis,
+    )
     from PySide6.QtMultimedia import QAudioOutput
 
     QShortcut = QtGui.QShortcut
@@ -56,6 +72,16 @@ if QT_API == 6:
     MB_YES = QMessageBox.StandardButton.Yes
     MB_NO = QMessageBox.StandardButton.No
 else:
+    from PySide2.QtCharts import (
+        QBarCategoryAxis,
+        QBarSeries,
+        QBarSet,
+        QChart,
+        QChartView,
+        QLineSeries,
+        QPieSeries,
+        QValueAxis,
+    )
     from PySide2.QtMultimedia import QMediaContent
 
     QShortcut = QtWidgets.QShortcut

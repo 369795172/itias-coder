@@ -146,7 +146,10 @@ class EncoderWindow(QMainWindow):
         self._export_btn = QPushButton("导出...")
         self._export_btn.clicked.connect(self._export)
 
-        for btn in [self._replay_btn, self._undo_btn, self._export_btn]:
+        self._analysis_btn = QPushButton("分析报告")
+        self._analysis_btn.clicked.connect(self._open_analysis)
+
+        for btn in [self._replay_btn, self._undo_btn, self._export_btn, self._analysis_btn]:
             btn.setMinimumHeight(34)
 
         self._undo_btn.setStyleSheet("""
@@ -158,10 +161,15 @@ class EncoderWindow(QMainWindow):
             QPushButton { background: #5C6BC0; color: white; border-radius: 5px; }
             QPushButton:hover { background: #3949AB; }
         """)
+        self._analysis_btn.setStyleSheet("""
+            QPushButton { background: #00897B; color: white; border-radius: 5px; }
+            QPushButton:hover { background: #00695C; }
+        """)
 
         ctrl_lay.addWidget(self._replay_btn)
         ctrl_lay.addWidget(self._undo_btn)
         ctrl_lay.addStretch()
+        ctrl_lay.addWidget(self._analysis_btn)
         ctrl_lay.addWidget(self._export_btn)
         left_lay.addLayout(ctrl_lay)
 
@@ -376,6 +384,12 @@ class EncoderWindow(QMainWindow):
             )
         except Exception as e:
             QMessageBox.critical(self, "导出失败", str(e))
+
+    def _open_analysis(self):
+        from .analysis_window import AnalysisWindow
+        window = AnalysisWindow(self.session, self.profile, self)
+        window.show()
+        self._analysis_window = window
 
     # ── Close Confirm ─────────────────────────────────────────────────────────
 
