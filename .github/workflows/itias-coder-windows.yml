@@ -1,9 +1,18 @@
 name: ITIAS Coder Windows
 
+# Public repo + standard windows-latest: Actions minutes are free.
+# Do NOT upload-artifact: Release assets are enough for sharing, and avoids
+# duplicating ~220MB zip retention alongside private-repo storage hygiene.
 on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - "itias_coder/**"
+      - "packaging/**"
+      - "config/**"
+      - "requirements*.txt"
+      - ".github/workflows/itias-coder-windows.yml"
 
 permissions:
   contents: write
@@ -32,13 +41,6 @@ jobs:
       - name: Build portable zip (Win7 SP1+ compatible)
         shell: pwsh
         run: ./packaging/build_windows.ps1
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ITIAS-Coder-win64
-          path: ${{ steps.ver.outputs.zip }}
-          retention-days: 30
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
