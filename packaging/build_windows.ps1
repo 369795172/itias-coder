@@ -40,7 +40,10 @@ New-Item -ItemType Directory -Force -Path $BundledFfmpeg | Out-Null
 Copy-Item (Join-Path $FfmpegBin "ffmpeg.exe") $BundledFfmpeg -Force
 Copy-Item (Join-Path $FfmpegBin "ffprobe.exe") $BundledFfmpeg -Force
 
-$Version = "0.2.0"
+$InitPy = Join-Path $ProjectRoot "itias_coder" "__init__.py"
+$VersionMatch = Select-String -Path $InitPy -Pattern '__version__\s*=\s*"([^"]+)"'
+if (-not $VersionMatch) { throw "Could not parse __version__ from $InitPy" }
+$Version = $VersionMatch.Matches[0].Groups[1].Value
 $ZipName = "ITIAS-Coder-v$Version-win64-win7.zip"
 $ZipPath = Join-Path $ProjectRoot "dist" $ZipName
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }

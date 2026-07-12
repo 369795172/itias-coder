@@ -34,7 +34,7 @@ python -m itias_coder
 .\packaging\build_windows.ps1
 ```
 
-GitHub Actions → artifact `ITIAS-Coder-win64` → `ITIAS-Coder-v0.2.0-win64-win7.zip`
+下载：打开 [Releases](https://github.com/369795172/itias-coder/releases/latest) → 下载 `ITIAS-Coder-v*-win64-win7.zip`（main 每次构建会自动发/更新对应版本 Release）。CI 也会保留 30 天 artifact `ITIAS-Coder-win64`。
 
 解压整个文件夹，双击 `ITIAS-Coder.exe`（需保留 `_internal/`、`ffmpeg/`）。
 

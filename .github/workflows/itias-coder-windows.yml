@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -16,6 +19,16 @@ jobs:
         with:
           python-version: "3.8"
 
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          VER=$(python -c "import re, pathlib; t=pathlib.Path('itias_coder/__init__.py').read_text(encoding='utf-8'); print(re.search(r'__version__\\s*=\\s*\"([^\"]+)\"', t).group(1))")
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VER" >> "$GITHUB_OUTPUT"
+          echo "zip=dist/ITIAS-Coder-v${VER}-win64-win7.zip" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VER"
+
       - name: Build portable zip (Win7 SP1+ compatible)
         shell: pwsh
         run: ./packaging/build_windows.ps1
@@ -24,5 +37,24 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ITIAS-Coder-win64
-          path: dist/ITIAS-Coder-v0.2.0-win64-win7.zip
+          path: ${{ steps.ver.outputs.zip }}
           retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ITIAS Coder ${{ steps.ver.outputs.tag }}
+          body: |
+            Windows portable build（Win7 SP1+ / 64-bit）。
+
+            1. 下载下方 `ITIAS-Coder-v${{ steps.ver.outputs.version }}-win64-win7.zip`
+            2. 解压整个文件夹
+            3. 双击 `ITIAS-Coder.exe`（需保留 `_internal/`、`ffmpeg/`）
+
+            若无法播放视频，可安装 [VC++ 2015–2022 x64](https://aka.ms/vs/17/release/vc_redist.x64.exe)。
+
+            构建来源：`${{ github.sha }}`（workflow run `${{ github.run_id }}`）。
+          files: ${{ steps.ver.outputs.zip }}
+          make_latest: true
+          fail_on_unmatched_files: true
