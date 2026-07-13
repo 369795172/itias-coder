@@ -4,10 +4,12 @@ from __future__ import annotations
 import os
 
 from itias_coder.qt_bindings import (
-    QFileDialog, QFont, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
-    QMessageBox, MB_NO, MB_YES, QPushButton, QSettings, Qt, QVBoxLayout,
-    QWidget, qt_exec,
+    QComboBox, QFileDialog, QFont, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+    QMainWindow, QMessageBox, MB_NO, MB_YES, QPushButton, QSettings, Qt,
+    QVBoxLayout, QWidget, qt_exec,
 )
+
+from ..models import Profile
 
 from ..profile import list_profiles, load_profile
 from ..slicer import collect_segments
@@ -21,7 +23,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("ITIAS Coder — 课堂互动分析编码工具")
         self.setMinimumSize(480, 420)
+        self._settings = QSettings("ITIAS-Coder", "itias-coder")
         self._build_ui()
+        self._restore_profile_selection()
 
     def _build_ui(self):
         central = QWidget()
@@ -40,6 +44,15 @@ class MainWindow(QMainWindow):
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setStyleSheet("color: #666;")
         root.addWidget(subtitle)
+
+        profile_group = QGroupBox("编码框架")
+        profile_lay = QHBoxLayout(profile_group)
+        profile_lay.addWidget(QLabel("编码框架"))
+        self._profile_combo = QComboBox()
+        self._profile_combo.addItems(list_profiles())
+        self._profile_combo.currentTextChanged.connect(self._on_profile_changed)
+        profile_lay.addWidget(self._profile_combo, stretch=1)
+        root.addWidget(profile_group)
 
         root.addSpacing(8)
 
@@ -191,6 +204,23 @@ class MainWindow(QMainWindow):
         footer.setStyleSheet("color: #aaa; font-size: 11px;")
         root.addWidget(footer)
 
+    def _restore_profile_selection(self):
+        saved = self._settings.value("launcher/profile_id", "itias_default", type=str)
+        idx = self._profile_combo.findText(saved)
+        if idx >= 0:
+            self._profile_combo.blockSignals(True)
+            self._profile_combo.setCurrentIndex(idx)
+            self._profile_combo.blockSignals(False)
+        elif self._profile_combo.count() > 0:
+            default_idx = self._profile_combo.findText("itias_default")
+            self._profile_combo.setCurrentIndex(default_idx if default_idx >= 0 else 0)
+
+    def _on_profile_changed(self, profile_id: str):
+        self._settings.setValue("launcher/profile_id", profile_id)
+
+    def _selected_profile_id(self) -> str:
+        return self._profile_combo.currentText()
+
     def _open_slicer(self):
         from .slicer_dialog import SlicerDialog
         dlg = SlicerDialog(self)
@@ -200,7 +230,8 @@ class MainWindow(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "选择切片文件夹")
         if not folder:
             return
-        self._launch_encoder(folder)
+        profile = load_profile(self._selected_profile_id())
+        self._launch_encoder(folder, profile)
 
     def _resume_from_excel(self):
         folder = QFileDialog.getExistingDirectory(self, "选择切片文件夹")
@@ -212,13 +243,15 @@ class MainWindow(QMainWindow):
         )
         if not excel_path:
             return
-        self._launch_encoder(folder, excel_path=excel_path)
+        profile = load_profile(self._selected_profile_id())
+        self._launch_encoder(folder, profile, excel_path=excel_path)
 
-    def _launch_encoder(self, folder: str, excel_path: str | None = None):
+    def _launch_encoder(
+        self, folder: str, profile: Profile, excel_path: str | None = None
+    ):
         from ..slicer import collect_segments
         from ..models import Segment, Session
         from ..storage import import_from_excel, load_session, save_session
-        from ..profile import load_profile
 
         files = collect_segments(folder)
         if not files:
@@ -227,8 +260,6 @@ class MainWindow(QMainWindow):
                 f"在以下文件夹中没有找到视频文件（mp4/avi/mov/mkv/m4v）：\n{folder}"
             )
             return
-
-        profile = load_profile("itias_default")
 
         # Try to restore autosave
         session = load_session(folder)
@@ -251,8 +282,7 @@ class MainWindow(QMainWindow):
                     f"检测到已保存进度（{coded}/{len(segments)} 段已编码），将从上次中断处继续。"
                 )
         else:
-            settings = QSettings("ITIAS-Coder", "itias-coder")
-            segment_duration = settings.value("slicer/duration", 3, type=int)
+            segment_duration = self._settings.value("slicer/duration", 3, type=int)
             segments = [Segment(index=i, filepath=fp) for i, fp in enumerate(files, 1)]
             session = Session(
                 segments=segments,
@@ -348,7 +378,7 @@ class MainWindow(QMainWindow):
 
     def _open_compare(self):
         from .compare_window import CompareWindow
-        profile = load_profile("itias_default")
+        profile = load_profile(self._selected_profile_id())
         window = CompareWindow(profile, self)
         window.show()
         self._compare_window = window
@@ -358,7 +388,7 @@ class MainWindow(QMainWindow):
 
         from ..models import Session
 
-        profile = load_profile("itias_default")
+        profile = load_profile(self._selected_profile_id())
         if path.endswith(".json"):
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
