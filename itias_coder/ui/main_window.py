@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 
 from itias_coder.qt_bindings import (
-    QFileDialog, QFont, QGroupBox, QHBoxLayout, QLabel, QMainWindow,
+    QFileDialog, QFont, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
     QMessageBox, MB_NO, MB_YES, QPushButton, QSettings, Qt, QVBoxLayout,
     QWidget, qt_exec,
 )
@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("ITIAS Coder — 课堂互动分析编码工具")
-        self.setMinimumSize(480, 340)
+        self.setMinimumSize(480, 420)
         self._build_ui()
 
     def _build_ui(self):
@@ -139,10 +139,54 @@ class MainWindow(QMainWindow):
         analysis_lay.addLayout(analysis_row)
         root.addWidget(analysis_group)
 
+        # Step 4: Reliability
+        reliability_group = QGroupBox("第四步：编码者信度")
+        reliability_lay = QVBoxLayout(reliability_group)
+        reliability_desc = QLabel(
+            "导入两名编码者对同一组切片的 Excel 导出，计算百分比一致性与 Cohen's Kappa。"
+        )
+        reliability_desc.setWordWrap(True)
+        reliability_desc.setStyleSheet("color: #555;")
+
+        file1_row = QHBoxLayout()
+        file1_row.addWidget(QLabel("编码者 1："))
+        self._reliability_file1 = QLineEdit()
+        self._reliability_file1.setPlaceholderText("选择 Excel 文件...")
+        file1_browse = QPushButton("浏览...")
+        file1_browse.clicked.connect(lambda: self._browse_reliability_file(self._reliability_file1))
+        file1_row.addWidget(self._reliability_file1, 1)
+        file1_row.addWidget(file1_browse)
+
+        file2_row = QHBoxLayout()
+        file2_row.addWidget(QLabel("编码者 2："))
+        self._reliability_file2 = QLineEdit()
+        self._reliability_file2.setPlaceholderText("选择 Excel 文件...")
+        file2_browse = QPushButton("浏览...")
+        file2_browse.clicked.connect(lambda: self._browse_reliability_file(self._reliability_file2))
+        file2_row.addWidget(self._reliability_file2, 1)
+        file2_row.addWidget(file2_browse)
+
+        reliability_btn = QPushButton("计算信度...")
+        reliability_btn.setMinimumHeight(40)
+        reliability_btn.setStyleSheet("""
+            QPushButton {
+                background: #6A1B9A; color: white;
+                border-radius: 6px; font-size: 14px;
+            }
+            QPushButton:hover { background: #4A148C; }
+        """)
+        reliability_btn.clicked.connect(self._run_reliability)
+
+        reliability_lay.addWidget(reliability_desc)
+        reliability_lay.addLayout(file1_row)
+        reliability_lay.addLayout(file2_row)
+        reliability_lay.addWidget(reliability_btn)
+        root.addWidget(reliability_group)
+
         root.addStretch()
 
         # Footer
-        footer = QLabel("v0.2.0 · ITIAS Coder · open source")
+        footer = QLabel("v0.3.0 · ITIAS Coder · open source")
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         footer.setStyleSheet("color: #aaa; font-size: 11px;")
         root.addWidget(footer)
@@ -259,6 +303,48 @@ class MainWindow(QMainWindow):
         window = AnalysisWindow(session, profile, self)
         window.show()
         self._analysis_window = window
+
+    def _browse_reliability_file(self, line_edit: QLineEdit):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择 Excel 导出文件", os.path.expanduser("~"), "Excel 文件 (*.xlsx)"
+        )
+        if path:
+            line_edit.setText(path)
+
+    def _run_reliability(self):
+        file1 = self._reliability_file1.text().strip()
+        file2 = self._reliability_file2.text().strip()
+        if not file1 or not file2:
+            QMessageBox.warning(self, "缺少文件", "请选择两名编码者的 Excel 导出文件。")
+            return
+        if not os.path.isfile(file1):
+            QMessageBox.warning(self, "文件不存在", f"编码者 1 文件不存在：\n{file1}")
+            return
+        if not os.path.isfile(file2):
+            QMessageBox.warning(self, "文件不存在", f"编码者 2 文件不存在：\n{file2}")
+            return
+
+        out_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "保存信度报告",
+            os.path.join(os.path.dirname(file1), "reliability_report.xlsx"),
+            "Excel 文件 (*.xlsx)",
+        )
+        if not out_path:
+            return
+
+        try:
+            from ..reliability import main_cli
+            main_cli(file1, file2, out_path)
+        except Exception as e:
+            QMessageBox.warning(self, "计算失败", str(e))
+            return
+
+        QMessageBox.information(
+            self,
+            "完成",
+            f"信度报告已导出：\n{out_path}\n\n详见 docs/reliability_metrics.md 了解指标含义。",
+        )
 
     def _open_compare(self):
         from .compare_window import CompareWindow
