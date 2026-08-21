@@ -55,3 +55,7 @@ Reference: [CCIES tutorial](https://luoyaocray.github.io/post/cciestu-wen-jiao-x
 ## License
 
 MIT
+
+## For AI agents
+
+AI agent 先读 [AGENTS.md](AGENTS.md)，再读 [docs/prd.md](docs/prd.md) 和 [docs/rfc.md](docs/rfc.md)。变更日志与 Lessons 在 [docs/working.md](docs/working.md)；验证分层与隐私 fail-closed 命令在 [docs/test.md](docs/test.md)。
