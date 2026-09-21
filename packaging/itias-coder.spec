@@ -3,7 +3,7 @@
 
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_dynamic_libs
 
 project_dir = Path(SPECPATH).resolve().parent
 entry = str(project_dir / "packaging" / "entry.py")
@@ -27,7 +27,7 @@ _mw = f"{_pyside_pkg}.QtMultimediaWidgets"
 a = Analysis(
     [entry],
     pathex=[str(project_dir)],
-    binaries=pyside_binaries,
+    binaries=[*pyside_binaries, *collect_dynamic_libs(f"{_pyside_pkg}.QtCharts")],
     datas=[
         (str(project_dir / "config" / "profiles"), "config/profiles"),
         *pyside_datas,

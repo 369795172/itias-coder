@@ -9,6 +9,7 @@
 - **修复 #14 Win7 启动闪退（PySide2 QtCharts 顶层导入崩溃）**：Win7 下 Qt5Charts.dll 系统级加载失败，`qt_bindings.py:75` 顶层 `from PySide2.QtCharts import ...` 抛 ImportError、双击闪退；v0.3.0 zip 取证确认 QtCharts.pyd/Qt5Charts.dll 均已打包（非采集缺失）。
 - 修复 = 防御式导入 + `CHARTS_AVAILABLE` 四处图表块降级守卫（矩阵/统计/导出不受影响）、启动 crash log（exe 同目录，APPDATA 回退）、`--selftest` 冻结包自检、CI 双档 selftest 门禁、pyinstaller==6.21.0 pin。
 - `tests/` 首次落地（Layer 1，10 项）；版本 bump 0.3.1。
+- CI selftest gate 修正等待语义（GUI 子系统 exe 需 Start-Process -Wait）+ 冻结包补 PySide2.QtCharts hiddenimports/collect_dynamic_libs（在场≠可导入）。
 
 ### 2026-08-21
 
