@@ -122,6 +122,13 @@ else:
     MB_NO = QMessageBox.No
 
 
+def charts_disabled_reason():
+    """None when charts available, else a user-facing degradation notice."""
+    if CHARTS_AVAILABLE:
+        return None
+    return "图表模块不可用（QtCharts 缺失，兼容模式）：矩阵、统计与导出不受影响"
+
+
 def qt_exec(app_or_dialog) -> int:
     """Qt5 uses exec_(); Qt6 uses exec()."""
     if QT_API == 6:
