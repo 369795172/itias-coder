@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 try:
     from PySide6 import QtCore, QtGui, QtMultimedia, QtMultimediaWidgets, QtWidgets
 
@@ -51,17 +53,37 @@ QObject = QtCore.QObject
 QVideoWidget = QtMultimediaWidgets.QVideoWidget
 QMediaPlayer = QtMultimedia.QMediaPlayer
 
+# Issue #14: QtCharts is optional. On Win7 the shipped QtCharts.pyd can fail at
+# the DLL level; a hard top-level import killed the process before any UI.
+# Chart symbols default to None and are only rebound when the import succeeds.
+_force_no_charts = os.environ.get("ITIAS_FORCE_NO_QTCHARTS") == "1"
+CHARTS_AVAILABLE = False
+QBarCategoryAxis = None  # type: ignore[assignment]
+QBarSeries = None  # type: ignore[assignment]
+QBarSet = None  # type: ignore[assignment]
+QChart = None  # type: ignore[assignment]
+QChartView = None  # type: ignore[assignment]
+QLineSeries = None  # type: ignore[assignment]
+QPieSeries = None  # type: ignore[assignment]
+QValueAxis = None  # type: ignore[assignment]
+
 if QT_API == 6:
-    from PySide6.QtCharts import (
-        QBarCategoryAxis,
-        QBarSeries,
-        QBarSet,
-        QChart,
-        QChartView,
-        QLineSeries,
-        QPieSeries,
-        QValueAxis,
-    )
+    if not _force_no_charts:
+        try:
+            from PySide6.QtCharts import (
+                QBarCategoryAxis,
+                QBarSeries,
+                QBarSet,
+                QChart,
+                QChartView,
+                QLineSeries,
+                QPieSeries,
+                QValueAxis,
+            )
+        except (ImportError, AttributeError):
+            pass
+        else:
+            CHARTS_AVAILABLE = True
     from PySide6.QtMultimedia import QAudioOutput
 
     QShortcut = QtGui.QShortcut
@@ -72,16 +94,22 @@ if QT_API == 6:
     MB_YES = QMessageBox.StandardButton.Yes
     MB_NO = QMessageBox.StandardButton.No
 else:
-    from PySide2.QtCharts import (
-        QBarCategoryAxis,
-        QBarSeries,
-        QBarSet,
-        QChart,
-        QChartView,
-        QLineSeries,
-        QPieSeries,
-        QValueAxis,
-    )
+    if not _force_no_charts:
+        try:
+            from PySide2.QtCharts import (
+                QBarCategoryAxis,
+                QBarSeries,
+                QBarSet,
+                QChart,
+                QChartView,
+                QLineSeries,
+                QPieSeries,
+                QValueAxis,
+            )
+        except (ImportError, AttributeError):
+            pass
+        else:
+            CHARTS_AVAILABLE = True
     from PySide2.QtMultimedia import QMediaContent
 
     QShortcut = QtWidgets.QShortcut
