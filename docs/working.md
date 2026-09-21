@@ -4,6 +4,12 @@
 
 ## Changelog
 
+### 2026-09-21
+
+- **修复 #14 Win7 启动闪退（PySide2 QtCharts 顶层导入崩溃）**：Win7 下 Qt5Charts.dll 系统级加载失败，`qt_bindings.py:75` 顶层 `from PySide2.QtCharts import ...` 抛 ImportError、双击闪退；v0.3.0 zip 取证确认 QtCharts.pyd/Qt5Charts.dll 均已打包（非采集缺失）。
+- 修复 = 防御式导入 + `CHARTS_AVAILABLE` 四处图表块降级守卫（矩阵/统计/导出不受影响）、启动 crash log（exe 同目录，APPDATA 回退）、`--selftest` 冻结包自检、CI 双档 selftest 门禁、pyinstaller==6.21.0 pin。
+- `tests/` 首次落地（Layer 1，10 项）；版本 bump 0.3.1。
+
 ### 2026-08-21
 
 - **scaffold v2 retrofit（#11）**：补齐 `AGENTS.md` 与 `docs/{prd,rfc,test,working}.md`；README 尾部与 AGENTS 互指。不改运行时、不改 Windows Actions、不把隐私扫描脚本挂进 CI。
@@ -19,3 +25,4 @@
 - ffmpeg stream copy 的段长受关键帧约束。把它写成已知测量域，而不是用静默重编码去「修准 3.000 秒」。
 - 学校 Win7 交付面一旦承诺，Python/PySide 升级就是 RFC，不是依赖整理。`qt_bindings.py` 双栈是在付这笔税，不是临时代码。
 - 文档 retrofit 与门禁脚本分 PR：否则「只改文档」的 issue 会夹带 CI，review 无法按层验收。
+- hiddenimports ≠ 符号级可用性；冻结包发布前必须 exe selftest 门禁。

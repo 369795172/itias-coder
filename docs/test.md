@@ -15,6 +15,8 @@
 | `storage` 导出/导入 | 按片段序号 round-trip `code_id`；TXT 行数 = 片段数 |
 | `reliability.compute_agreement` | 全一致 → 百分比 100 且 κ 可计算；故意错位 → 混淆矩阵对应格 +1 |
 | `compare_window.MAX_LESSONS` | 常量 = 30（回归锁，防止无 RFC 改上限） |
+| `qt_bindings` 图表降级 | `tests/test_qt_bindings_fallback.py` + `tests/test_charts_disabled_reason.py`（含 env 开关与损坏模块注入） |
+| `main._selftest` 决策 | `tests/test_selftest.py` |
 
 禁止：把课堂 mp4 放进 `tests/`。路径用临时目录与空文件名即可。
 

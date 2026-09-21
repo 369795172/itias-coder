@@ -7,6 +7,7 @@ from pathlib import Path
 import openpyxl
 
 from itias_coder.qt_bindings import (
+    CHARTS_AVAILABLE,
     QChart,
     QChartView,
     QComboBox,
@@ -24,6 +25,7 @@ from itias_coder.qt_bindings import (
     QVBoxLayout,
     QWidget,
     Qt,
+    charts_disabled_reason,
 )
 
 from ..analysis import (
@@ -112,8 +114,15 @@ class CompareWindow(QMainWindow):
         filter_row.addWidget(self._category_combo)
         filter_row.addStretch()
         chart_lay.addLayout(filter_row)
-        self._line_chart_view = QChartView()
-        chart_lay.addWidget(self._line_chart_view)
+        if CHARTS_AVAILABLE:
+            self._line_chart_view = QChartView()
+            chart_lay.addWidget(self._line_chart_view)
+        else:
+            hint = QLabel(charts_disabled_reason())
+            hint.setWordWrap(True)
+            hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            chart_lay.addWidget(hint)
+            self._line_chart_view = None
         self._tabs.addTab(chart_widget, "折线对比")
 
         layout.addWidget(self._tabs)
@@ -213,6 +222,9 @@ class CompareWindow(QMainWindow):
         table.resizeColumnsToContents()
 
     def _refresh_line_chart(self):
+        if not CHARTS_AVAILABLE:
+            return
+
         if not self.sessions:
             self._line_chart_view.setChart(QChart())
             return

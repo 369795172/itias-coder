@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from itias_coder.qt_bindings import (
+    CHARTS_AVAILABLE,
     QBarCategoryAxis,
     QBarSeries,
     QBarSet,
@@ -20,6 +21,7 @@ from itias_coder.qt_bindings import (
     QVBoxLayout,
     QWidget,
     Qt,
+    charts_disabled_reason,
 )
 
 from ..analysis import (
@@ -101,42 +103,48 @@ class AnalysisWindow(QMainWindow):
         code_counts = behavior_counts(self.session, self.profile)
         total = self.session.coded_count
 
-        # Pie chart — 5 categories
-        pie_chart = QChart()
-        pie_chart.setTitle("类别占比")
-        pie_series = QPieSeries()
-        for cat_key, cat_label in self.profile.category_labels.items():
-            count = cat_counts.get(cat_key, 0)
-            if count > 0:
-                pct = count / total * 100 if total else 0
-                pie_series.append(f"{cat_label} ({pct:.1f}%)", count)
-        pie_chart.addSeries(pie_series)
-        pie_chart.legend().setAlignment(Qt.AlignmentFlag.AlignRight)
-        pie_view = QChartView(pie_chart)
+        chart_hint = None
+        if CHARTS_AVAILABLE:
+            # Pie chart — 5 categories
+            pie_chart = QChart()
+            pie_chart.setTitle("类别占比")
+            pie_series = QPieSeries()
+            for cat_key, cat_label in self.profile.category_labels.items():
+                count = cat_counts.get(cat_key, 0)
+                if count > 0:
+                    pct = count / total * 100 if total else 0
+                    pie_series.append(f"{cat_label} ({pct:.1f}%)", count)
+            pie_chart.addSeries(pie_series)
+            pie_chart.legend().setAlignment(Qt.AlignmentFlag.AlignRight)
+            pie_view = QChartView(pie_chart)
 
-        # Bar chart — 18 codes
-        bar_chart = QChart()
-        bar_chart.setTitle("编码次数")
-        bar_series = QBarSeries()
-        bar_set = QBarSet("次数")
-        categories = []
-        for code in self.profile.codes:
-            categories.append(str(code.id))
-            bar_set.append(code_counts.get(code.id, 0))
-        bar_series.append(bar_set)
-        bar_chart.addSeries(bar_series)
+            # Bar chart — 18 codes
+            bar_chart = QChart()
+            bar_chart.setTitle("编码次数")
+            bar_series = QBarSeries()
+            bar_set = QBarSet("次数")
+            categories = []
+            for code in self.profile.codes:
+                categories.append(str(code.id))
+                bar_set.append(code_counts.get(code.id, 0))
+            bar_series.append(bar_set)
+            bar_chart.addSeries(bar_series)
 
-        axis_x = QBarCategoryAxis()
-        axis_x.append(categories)
-        bar_chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
-        bar_series.attachAxis(axis_x)
+            axis_x = QBarCategoryAxis()
+            axis_x.append(categories)
+            bar_chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+            bar_series.attachAxis(axis_x)
 
-        axis_y = QValueAxis()
-        axis_y.setLabelFormat("%d")
-        bar_chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
-        bar_series.attachAxis(axis_y)
+            axis_y = QValueAxis()
+            axis_y.setLabelFormat("%d")
+            bar_chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+            bar_series.attachAxis(axis_y)
 
-        bar_view = QChartView(bar_chart)
+            bar_view = QChartView(bar_chart)
+        else:
+            chart_hint = QLabel(charts_disabled_reason())
+            chart_hint.setWordWrap(True)
+            chart_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Stats table
         stats = QTableWidget(len(self.profile.codes) + len(self.profile.category_labels), 3)
@@ -168,8 +176,11 @@ class AnalysisWindow(QMainWindow):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         charts = QWidget()
         charts_lay = QVBoxLayout(charts)
-        charts_lay.addWidget(pie_view)
-        charts_lay.addWidget(bar_view)
+        if chart_hint is not None:
+            charts_lay.addWidget(chart_hint)
+        else:
+            charts_lay.addWidget(pie_view)
+            charts_lay.addWidget(bar_view)
         splitter.addWidget(charts)
         splitter.addWidget(right)
         splitter.setStretchFactor(0, 3)
@@ -180,6 +191,13 @@ class AnalysisWindow(QMainWindow):
     def _build_timeseries_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+
+        if not CHARTS_AVAILABLE:
+            hint = QLabel(charts_disabled_reason())
+            hint.setWordWrap(True)
+            hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(hint)
+            return widget
 
         series_data = time_series_by_category(self.session, self.profile)
         chart = QChart()

@@ -42,6 +42,21 @@ jobs:
         shell: pwsh
         run: ./packaging/build_windows.ps1
 
+      # CI runs on Win10+ and cannot reproduce the Win7-specific DLL load failure; this gate makes "frozen package missing chart symbols" a per-build detectable regression.
+      - name: Frozen selftest gate (dual tier)
+        shell: pwsh
+        run: |
+          ./dist/ITIAS-Coder/ITIAS-Coder.exe --selftest
+          Write-Host "tier1 normal (chart symbols must import) exit=$LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $env:ITIAS_FORCE_NO_QTCHARTS = '1'
+          ./dist/ITIAS-Coder/ITIAS-Coder.exe --selftest --allow-no-charts
+          Write-Host "tier2 forced-no-charts (degraded path must not crash) exit=$LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          Write-Host "Frozen selftest gate: PASS (both tiers)"
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:

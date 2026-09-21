@@ -40,6 +40,8 @@ python -m itias_coder
 
 若仍无法播放视频，可安装 [VC++ 2015–2022 运行库](https://aka.ms/vs/17/release/vc_redist.x64.exe)。
 
+启动失败时 exe 同目录会生成 `ITIAS-Coder-crash-*.log`，可回传该文件反馈。
+
 ## Encoding framework
 
 Default profile: `config/profiles/itias_default.yaml` (顾小清 & 王炜 2004, 18 categories).
