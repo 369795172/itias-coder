@@ -10,6 +10,7 @@
 - 修复 = 防御式导入 + `CHARTS_AVAILABLE` 四处图表块降级守卫（矩阵/统计/导出不受影响）、启动 crash log（exe 同目录，APPDATA 回退）、`--selftest` 冻结包自检、CI 双档 selftest 门禁、pyinstaller==6.21.0 pin。
 - `tests/` 首次落地（Layer 1，10 项）；版本 bump 0.3.1。
 - CI selftest gate 修正等待语义（GUI 子系统 exe 需 Start-Process -Wait）+ 冻结包补 PySide2.QtCharts hiddenimports/collect_dynamic_libs（在场≠可导入）。
+- CI 实证 PySide2.QtCharts 绑定级导出失败（python 3.8 + PySide2 5.15.2.1，非冻结/非文件缺失）；win7 栈图表按设计降级（编码/矩阵/统计/导出不受影响），图表恢复立项 follow-up #17；selftest 门禁 tier1 改为「全模块导入 + 不崩」硬门禁、图表状态记录式。
 
 ### 2026-08-21
 

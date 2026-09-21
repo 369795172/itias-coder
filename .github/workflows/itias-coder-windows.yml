@@ -42,7 +42,9 @@ jobs:
         shell: pwsh
         run: ./packaging/build_windows.ps1
 
-      # CI cannot reproduce user-machine DLL failures; this gate makes "frozen package missing/unimportable chart symbols" a per-build detectable regression.
+      # PySide2 5.15.2.1 on py3.8/win does not export QtCharts symbols (follow-up #17, design-accepted);
+      # tier1 gates "every module imports + no crash" and records the charts state.
+      # RESTORATION: once #17 is fixed, tighten tier1 back to bare --selftest (hard-fails on charts unavailable).
       - name: Frozen selftest gate (dual tier)
         shell: pwsh
         run: |
@@ -50,18 +52,17 @@ jobs:
           # stays null, so use Start-Process -Wait -PassThru and check ExitCode explicitly.
           $exe = './dist/ITIAS-Coder/ITIAS-Coder.exe'
 
-          $p1 = Start-Process -FilePath $exe -ArgumentList '--selftest' -Wait -PassThru -RedirectStandardOutput selftest_tier1.out
-          Get-Content selftest_tier1.out
-          Write-Host "tier1 normal (chart symbols must import) exit=$($p1.ExitCode)"
-          if ($null -eq $p1.ExitCode -or $p1.ExitCode -ne 0) {
-            python -c "from PySide2.QtCharts import QChart; print('unfrozen import probe: ok')"
-            Write-Host "unfrozen probe exit=$LASTEXITCODE (diagnostic only)"
-            exit 1
-          }
+          $p1 = Start-Process -FilePath $exe -ArgumentList '--selftest','--allow-no-charts' -Wait -PassThru -RedirectStandardOutput selftest_tier1.out
+          $tier1Out = Get-Content selftest_tier1.out -Raw
+          Write-Output $tier1Out
+          Write-Host "tier1 startup gate (charts state recorded) exit=$($p1.ExitCode)"
+          if ($null -eq $p1.ExitCode -or $p1.ExitCode -ne 0) { exit 1 }
+          if ($null -eq $tier1Out -or $tier1Out -notmatch 'SELFTEST OK') { exit 1 }
 
           $env:ITIAS_FORCE_NO_QTCHARTS = '1'
           $p2 = Start-Process -FilePath $exe -ArgumentList '--selftest','--allow-no-charts' -Wait -PassThru -RedirectStandardOutput selftest_tier2.out
-          Get-Content selftest_tier2.out
+          $tier2Out = Get-Content selftest_tier2.out -Raw
+          Write-Output $tier2Out
           Write-Host "tier2 forced-no-charts (degraded path must not crash) exit=$($p2.ExitCode)"
           if ($null -eq $p2.ExitCode -or $p2.ExitCode -ne 0) { exit 1 }
           Remove-Item Env:ITIAS_FORCE_NO_QTCHARTS
