@@ -4,6 +4,12 @@
 
 ## Changelog
 
+### 2026-09-28
+
+- **修复 #19 选中文名视频报 `'gbk' codec can't decode byte 0xb9`**：zh-CN locale（cp936）下 Python 用本地 ANSI codepage 解码 ffmpeg stderr，遇到非 GBK 字节即 UnicodeDecodeError，切片直接失败；`slicer.py` 两处 subprocess 显式 `encoding="utf-8", errors="replace"`。
+- 配套机械锁定：`tests/test_slicer_locale.py`（Popen/probe_duration 显式 encoding）+ `tests/test_source_no_locale_io.py`（源扫描禁止裸 `text=True` 与无 `encoding` 的 `open()`）。
+- 版本 bump 0.3.2；`packaging/version.txt` 同步（此前滞留 0.3.0，消除人肉陷阱）。
+
 ### 2026-09-21
 
 - **修复 #14 Win7 启动闪退（PySide2 QtCharts 顶层导入崩溃）**：Win7 下 Qt5Charts.dll 系统级加载失败，`qt_bindings.py:75` 顶层 `from PySide2.QtCharts import ...` 抛 ImportError、双击闪退；v0.3.0 zip 取证确认 QtCharts.pyd/Qt5Charts.dll 均已打包（非采集缺失）。
@@ -28,3 +34,4 @@
 - 学校 Win7 交付面一旦承诺，Python/PySide 升级就是 RFC，不是依赖整理。`qt_bindings.py` 双栈是在付这笔税，不是临时代码。
 - 文档 retrofit 与门禁脚本分 PR：否则「只改文档」的 issue 会夹带 CI，review 无法按层验收。
 - hiddenimports ≠ 符号级可用性；冻结包发布前必须 exe selftest 门禁。
+- zh-CN locale（cp936）是 Windows 交付的一等验收环境：subprocess 文本 I/O 必须显式 `encoding="utf-8", errors="replace"`；CI 的英文 locale 无法模拟中文 ANSI codepage，须以单测 + 源扫描测试机械锁定（`tests/test_slicer_locale.py`、`tests/test_source_no_locale_io.py`），禁止裸 `text=True` 与无 `encoding` 的 `open()`。
