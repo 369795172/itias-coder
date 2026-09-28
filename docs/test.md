@@ -17,6 +17,9 @@
 | `compare_window.MAX_LESSONS` | 常量 = 30（回归锁，防止无 RFC 改上限） |
 | `qt_bindings` 图表降级 | `tests/test_qt_bindings_fallback.py` + `tests/test_charts_disabled_reason.py`（含 env 开关与损坏模块注入） |
 | `main._selftest` 决策 | `tests/test_selftest.py` |
+| `slicer` zh-CN 编码 | `tests/test_slicer_locale.py`（subprocess 显式 `encoding="utf-8"`）+ `tests/test_source_no_locale_io.py`（源扫描：禁止裸 `text=True` 与无 `encoding` 的 `open()`） |
+
+zh-CN（cp936）类编码缺陷以此层机械锁定；CI windows-latest 英文 locale 是结构性盲区，无法模拟中文 ANSI codepage。
 
 禁止：把课堂 mp4 放进 `tests/`。路径用临时目录与空文件名即可。
 
