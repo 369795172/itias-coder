@@ -38,7 +38,7 @@ def probe_duration(video_path: str, ffmpeg_bin: str = "ffmpeg") -> Optional[floa
         result = subprocess.run(
             [ffprobe, "-v", "error", "-show_entries", "format=duration",
              "-of", "default=noprint_wrappers=1:nokey=1", video_path],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
         )
         return float(result.stdout.strip())
     except Exception:
@@ -106,6 +106,8 @@ class SliceWorker(QObject):
                 stderr=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
 
             # Parse ffmpeg stderr for time= to show progress
