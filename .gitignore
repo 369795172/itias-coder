@@ -8,6 +8,7 @@ build/
 *.spec.bak
 .DS_Store
 .itias_save.json
+.omc/
 
 # ITIAS session data (sliced segments + coding results)
 data/
