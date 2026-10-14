@@ -60,7 +60,12 @@ def run() -> None:
     if hasattr(Qt, "ApplicationAttribute"):
         app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
+    from itias_coder import runlog
     from itias_coder.ui.main_window import MainWindow
+
+    log_path = runlog.init_runlog()
+    if log_path is not None:
+        runlog.log("startup", "run log ready")
 
     window = MainWindow()
     window.show()

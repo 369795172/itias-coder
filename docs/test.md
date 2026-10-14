@@ -18,6 +18,8 @@
 | `qt_bindings` 图表降级 | `tests/test_qt_bindings_fallback.py` + `tests/test_charts_disabled_reason.py`（含 env 开关与损坏模块注入） |
 | `main._selftest` 决策 | `tests/test_selftest.py` |
 | `slicer` zh-CN 编码 | `tests/test_slicer_locale.py`（subprocess 显式 `encoding="utf-8"`）+ `tests/test_source_no_locale_io.py`（源扫描：禁止裸 `text=True` 与无 `encoding` 的 `open()`） |
+| `slicer` 转码决策 | `tests/test_transcode_decision.py`：HEVC→转码 / H.420p+AAC→直通 / 探测失败→直通回退；probe_streams 失败路径不抛异常 |
+| `runlog` 运行日志 | 同文件：header 写入、append、未 init 时 no-op、轮转保留 5 份 |
 
 zh-CN（cp936）类编码缺陷以此层机械锁定；CI windows-latest 英文 locale 是结构性盲区，无法模拟中文 ANSI codepage。
 

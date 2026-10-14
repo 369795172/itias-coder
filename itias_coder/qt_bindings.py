@@ -142,6 +142,7 @@ class SegmentPlayer:
     def __init__(self, video_widget: QVideoWidget):
         self._video_widget = video_widget
         self._on_end_of_media = None
+        self._on_playback_error = None
 
         if QT_API == 6:
             self._audio = QAudioOutput()
@@ -159,10 +160,28 @@ class SegmentPlayer:
             self._player.mediaStatusChanged.connect(self._handle_media_status)
             self._player.error.connect(self._handle_error_qt5)
 
+        # Qt5: a None service means no DirectShow/WMF backend at all (frozen
+        # packaging issue); Qt6 has no service() but reports via errorOccurred.
+        if QT_API == 5:
+            from itias_coder import runlog
+
+            service = self._player.service()
+            runlog.log(
+                "player",
+                "qt5 media service=%s" % ("ok" if service is not None else "MISSING"),
+            )
+
     def set_end_of_media_callback(self, callback) -> None:
         self._on_end_of_media = callback
 
+    def set_playback_error_callback(self, callback) -> None:
+        """UI hook fired (once per failing play call) with the error string."""
+        self._on_playback_error = callback
+
     def play_file(self, filepath: str) -> None:
+        from itias_coder import runlog
+
+        runlog.log("player", "play_file %s" % filepath)
         url = QUrl.fromLocalFile(filepath)
         if QT_API == 6:
             self._player.setSource(url)
@@ -181,16 +200,31 @@ class SegmentPlayer:
         self._player.stop()
 
     def _handle_media_status(self, status) -> None:
+        from itias_coder import runlog
+
+        runlog.log("player", "mediaStatus=%s" % status)
         if status == MediaEndOfMedia and self._on_end_of_media:
             self._on_end_of_media()
 
     def _handle_error_qt6(self, error, error_string: str) -> None:
         if error != MediaNoError:
             self._last_error = error_string
+            self._report_playback_error(error_string)
 
     def _handle_error_qt5(self, error) -> None:
         if error != MediaNoError:
             self._last_error = self._player.errorString()
+            self._report_playback_error("%s (%s)" % (self._player.errorString(), error))
+
+    def _report_playback_error(self, message: str) -> None:
+        from itias_coder import runlog
+
+        runlog.log("player", "ERROR %s" % message)
+        if self._on_playback_error is not None:
+            try:
+                self._on_playback_error(message)
+            except Exception:
+                pass
 
     @property
     def last_error(self) -> str:

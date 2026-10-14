@@ -4,6 +4,15 @@
 
 ## Changelog
 
+### 2026-10-14
+
+- **修复 #21 v0.3.2 行为判断页黑屏无声（Win7 + 源视频 HEVC 直通切片不可解码）**：用户定向反馈四项证据齐（无 crash 日志 / 全黑无声 / App 流程存活 / 样本视频特征与手机 HEVC 竖屏源吻合）；根因 = `slicer.py` `-c copy` 直通保留源编码，Win7 股票 DirectShow 无 HEVC 解码器，且 `SegmentPlayer._last_error` 只存内存完全静默。
+- 修复三层：`runlog.py` 运行日志（exe 同目录 `ITIAS-Coder-run-*.log`、APPDATA 回退、保留 5 份、环境头 + 播放状态迁移 + 错误详情）；`slicer.py` 切片前 ffprobe 预检，视频非 H.420p/音频非 AAC·MP3 自动转码 `libx264 main + aac`（bundled gyan essentials 含 libx264），兼容源维持直通快路径；`SegmentPlayer` 错误回调 → encoder_window 状态栏 + 一次性指引弹窗（含日志路径与「重切片边界不变可续用进度」）。
+- 转码路径 `-force_key_frames expr:gte(t,n_forced*段长)`：libx264 默认 GOP 250 帧会吞掉段边界，转码模式必须显式放关键帧，否则段粒度漂移破坏编码会话语义（e2e 实测：无此参数 7s 源只出 1 段，加后 3+3+1）。
+- e2e 实测修正一处真 bug：ffprobe `-select_streams` 不支持 `v:0:a:0` 复合 specifier（静默返回空 → 永远回退直通），改为全量 JSON 解析后按 codec_type 取首流。
+- 对既有会话：重切片段边界不变，`.itias_save.json` 按序号续用。
+- 版本 bump 0.3.3（`packaging/version.txt` 同步）。
+
 ### 2026-09-28
 
 - **修复 #19 选中文名视频报 `'gbk' codec can't decode byte 0xb9`**：zh-CN locale（cp936）下 Python 用本地 ANSI codepage 解码 ffmpeg stderr，遇到非 GBK 字节即 UnicodeDecodeError，切片直接失败；`slicer.py` 两处 subprocess 显式 `encoding="utf-8", errors="replace"`。
@@ -27,6 +36,9 @@
 
 ## Lessons Learned
 
+- 直通（`-c copy`）交付的「能切片」不等于「App 内能播」：解码面在目标机系统（Win7 DirectShow），不在 ffmpeg。凡 stream copy，编码兼容性必须在切片前显式判定，而不是等播放失败再取证。
+- 转码切片必须 `-force_key_frames` 对齐段边界：segment muxer 只在关键帧切，编码器 GOP 是隐含合约，换编码器时要重签。
+- 每次运行写 run log 不是可选项：静默失败类 bug（播放、音频、图表降级）在没有现场日志时，用户侧「全黑没声音」就是全部信息，定位成本全压在猜测上。
 - 飞行中项目补 scaffold 时，已上线的数字就是 Gate A 的原材料：把 README/UI/常量收成可勾选标准，而不是 agent 另造一套「更圆」的阈值。
 - 含真人课堂媒体的 public 工具，隐私扫描是产品约束（失败路径：有命中就不许发），不是 CI 装饰。扫描实现可以后置，定义必须与 PRD 非目标同一天出现。
 - 有窗口不等于有设计系统。没有状态×视觉表和 token 时不建 `design.md`，空完整比缺席更贵。

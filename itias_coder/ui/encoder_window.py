@@ -253,6 +253,27 @@ class EncoderWindow(QMainWindow):
     def _setup_player(self):
         self._segment_player = SegmentPlayer(self._video_widget)
         self._segment_player.set_end_of_media_callback(self._on_segment_end)
+        self._segment_player.set_playback_error_callback(self._on_playback_error)
+        self._playback_error_shown = False
+
+    def _on_playback_error(self, message: str):
+        from itias_coder import runlog
+
+        self._status_bar.showMessage("⚠ 片段无法播放：已记录日志，可继续编码或重切片")
+        if self._playback_error_shown:
+            return
+        self._playback_error_shown = True
+        log_path = runlog.current_log_path()
+        log_hint = f"\n运行日志：{log_path}" if log_path else ""
+        QMessageBox.warning(
+            self,
+            "片段播放失败",
+            "当前片段在软件内无法播放（画面黑屏/无声）。\n\n"
+            "常见原因：视频编码不兼容（如手机 HEVC 录像直通切片）。\n"
+            "用本版本重新切片同一视频会自动转为兼容格式，"
+            "片段边界不变，已编码进度可继续使用。"
+            f"{log_hint}",
+        )
 
     def _on_segment_end(self):
         if self._current_idx is not None:
