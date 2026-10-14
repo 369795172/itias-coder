@@ -40,7 +40,9 @@ python -m itias_coder
 
 若仍无法播放视频，可安装 [VC++ 2015–2022 运行库](https://aka.ms/vs/17/release/vc_redist.x64.exe)。
 
-启动失败时 exe 同目录会生成 `ITIAS-Coder-crash-*.log`，可回传该文件反馈。
+启动失败时 exe 同目录会生成 `ITIAS-Coder-crash-*.log`，可回传该文件反馈。每次运行还会生成 `ITIAS-Coder-run-*.log`（保留最近 5 份），播放失败时把该日志一并回传可加速定位。
+
+**播放兼容性**：切片时自动检测视频编码；手机 HEVC 等软件内播放器（Win7 DirectShow）无法解码的格式会自动转为 H.264 兼容格式（速度慢于直通切片），片段边界不变。
 
 ## Encoding framework
 
