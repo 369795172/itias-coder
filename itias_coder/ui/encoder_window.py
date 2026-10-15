@@ -8,8 +8,8 @@ from itias_coder.qt_bindings import (
     QCloseEvent, QColor, QDialog, QFileDialog, QFont, QGridLayout, QGroupBox,
     QHBoxLayout, QKeySequence, QLabel, QMainWindow, QMessageBox, MB_NO, MB_YES,
     QProgressBar, QPushButton, QScrollArea, QShortcut, QSizePolicy,
-    QSizePolicyExpanding, QSizePolicyFixed, QStatusBar, Qt, QVBoxLayout,
-    QWidget, QVideoWidget, SegmentPlayer,
+    QSizePolicyExpanding, QSizePolicyFixed, QStackedWidget, QStatusBar, Qt,
+    QVBoxLayout, QWidget, QVideoWidget, SegmentPlayer,
 )
 
 from ..models import CodeDef, Profile, Segment, Session
@@ -123,14 +123,25 @@ class EncoderWindow(QMainWindow):
         self._progress_bar.setMaximumHeight(18)
         left_lay.addWidget(self._progress_bar)
 
-        # Video widget
+        # Video widget (Qt multimedia) + ffmpeg-direct fallback surface (#25)
         self._video_widget = QVideoWidget()
         self._video_widget.setMinimumHeight(360)
         self._video_widget.setSizePolicy(
             QSizePolicyExpanding, QSizePolicyExpanding
         )
         self._video_widget.setStyleSheet("background: #000;")
-        left_lay.addWidget(self._video_widget)
+
+        from ..ffmpeg_player import VideoSurface
+
+        self._fallback_surface = VideoSurface()
+        self._stacked = QStackedWidget()
+        self._stacked.addWidget(self._video_widget)
+        self._stacked.addWidget(self._fallback_surface.widget())
+        self._stacked.setMinimumHeight(360)
+        self._stacked.setSizePolicy(
+            QSizePolicyExpanding, QSizePolicyExpanding
+        )
+        left_lay.addWidget(self._stacked)
 
         # Video controls
         ctrl_lay = QHBoxLayout()
@@ -255,11 +266,35 @@ class EncoderWindow(QMainWindow):
         self._segment_player.set_end_of_media_callback(self._on_segment_end)
         self._segment_player.set_playback_error_callback(self._on_playback_error)
         self._playback_error_shown = False
+        self._use_fallback = False
+
+        from ..ffmpeg_player import FfmpegPlayer
+        from ..slicer import find_ffmpeg
+
+        self._fallback_player = FfmpegPlayer(
+            self._fallback_surface,
+            find_ffmpeg() or "ffmpeg",
+            lambda: (self._stacked.currentWidget().width(),
+                     self._stacked.currentWidget().height()),
+        )
+        self._fallback_player.set_end_of_media_callback(self._on_segment_end)
+        self._fallback_player.mediaStatusChanged.connect(
+            lambda s: self._status_bar.showMessage(f"[兼容播放] {s}")
+        )
+
+    def _play_current(self, filepath: str):
+        if self._use_fallback:
+            self._fallback_player.play_file(filepath)
+        else:
+            self._segment_player.play_file(filepath)
 
     def _on_playback_error(self, message: str):
         from itias_coder import runlog
 
         self._status_bar.showMessage("⚠ 片段无法播放：已记录日志，可继续编码或重切片")
+        if not self._use_fallback:
+            self._switch_to_fallback()
+            return
         if self._playback_error_shown:
             return
         self._playback_error_shown = True
@@ -268,18 +303,27 @@ class EncoderWindow(QMainWindow):
         QMessageBox.warning(
             self,
             "片段播放失败",
-            "当前片段在软件内无法播放（画面黑屏/无声）。\n\n"
-            "常见原因：视频编码不兼容（如手机 HEVC 录像直通切片）。\n"
-            "用本版本重新切片同一视频会自动转为兼容格式，"
-            "片段边界不变，已编码进度可继续使用。"
+            "当前片段在软件内无法播放。\n\n"
+            f"详细信息：{message}\n"
+            "已记录日志；导出编码与统计不受影响。"
             f"{log_hint}",
         )
+
+    def _switch_to_fallback(self):
+        from itias_coder import runlog
+
+        self._use_fallback = True
+        self._stacked.setCurrentWidget(self._fallback_surface.widget())
+        runlog.log("player", "switching to ffmpeg-direct fallback playback")
+        if self._current_idx is not None:
+            seg = self.session.segments[self._current_idx]
+            self._fallback_player.play_file(seg.filepath)
 
     def _on_segment_end(self):
         if self._current_idx is not None:
             seg = self.session.segments[self._current_idx]
             if not seg.is_coded:
-                self._segment_player.replay()
+                self._replay_current()
 
     # ── Segment Navigation ────────────────────────────────────────────────────
 
@@ -313,11 +357,14 @@ class EncoderWindow(QMainWindow):
             )
             self._status_bar.showMessage(f"正在播放第 {seg.index} 段，请点击右侧按钮编码")
 
-        self._segment_player.play_file(seg.filepath)
+        self._play_current(seg.filepath)
 
     def _replay_current(self):
         """Restart playback of current segment."""
-        self._segment_player.replay()
+        if self._use_fallback:
+            self._fallback_player.replay()
+        else:
+            self._segment_player.replay()
 
     # ── Coding ────────────────────────────────────────────────────────────────
 
@@ -350,6 +397,7 @@ class EncoderWindow(QMainWindow):
         # Check completion
         if self.session.is_complete:
             self._segment_player.stop()
+            self._fallback_player.stop()
             reply = QMessageBox.question(
                 self, "编码完成！",
                 f"全部 {self.session.total} 段已编码完成！\n\n是否立即导出结果？",
@@ -431,5 +479,6 @@ class EncoderWindow(QMainWindow):
                 return
 
         self._segment_player.stop()
+        self._fallback_player.stop()
         save_session(self.session)
         event.accept()

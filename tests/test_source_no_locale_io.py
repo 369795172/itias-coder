@@ -67,14 +67,16 @@ def _iter_call_blocks(source: str, pattern: str):
     """Yield (lineno, block_text) for each occurrence of ``pattern`` in source.
 
     Skips matches embedded in a longer identifier (e.g. the ``open(`` inside
-    ``Popen(``) so builtin ``open()`` calls are matched exactly.
+    ``Popen(``) and attribute calls like ``audio.open(`` (Qt QAudioOutput,
+    not the locale-sensitive builtin) so builtin ``open()`` calls are
+    matched exactly.
     """
     search_from = 0
     while True:
         idx = source.find(pattern, search_from)
         if idx == -1:
             return
-        if idx > 0 and source[idx - 1] in _IDENTIFIER_CHARS:
+        if idx > 0 and source[idx - 1] in _IDENTIFIER_CHARS | {"."}:
             search_from = idx + len(pattern)
             continue
         open_paren = idx + len(pattern) - 1
