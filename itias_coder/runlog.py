@@ -80,6 +80,42 @@ def log(category: str, message: str) -> None:
         pass
 
 
+def _windows_media_facts() -> dict:
+    """Existence of DirectShow-era media components (#25).
+
+    Stock Win10 ships all of these; N editions and stripped school images
+    drop some. Absent flags in the run log identify the exact gap without
+    remote debugging.
+    """
+    import os
+
+    windir = os.environ.get("windir", r"C:\Windows")
+    system32 = os.path.join(windir, "System32")
+    dlls = {
+        "quartz": "quartz.dll",
+        "msmpeg2vdec": "msmpeg2vdec.dll",
+        "msauddecm": "msauddecm.dll",
+        "mfplat": "mfplat.dll",
+    }
+    facts = {}
+    for key, name in dlls.items():
+        facts[key] = os.path.isfile(os.path.join(system32, name))
+    facts["wmplayer"] = any(
+        os.path.isfile(
+            os.path.join(program_dir, "Windows Media Player", "wmplayer.exe")
+        )
+        for program_dir in (
+            os.environ.get("ProgramFiles", r"C:\Program Files"),
+            os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+        )
+    )
+    return facts
+
+
+def _format_media_facts(facts: dict) -> str:
+    return " ".join("%s=%d" % (k, int(bool(v))) for k, v in sorted(facts.items()))
+
+
 def _environment_header() -> str:
     import platform
 
@@ -97,4 +133,9 @@ def _environment_header() -> str:
         "qt_runtime=%s" % qt_bindings.QtCore.qVersion(),
         "charts_available=%s" % qt_bindings.CHARTS_AVAILABLE,
     ]
+    if sys.platform == "win32":
+        try:
+            lines.append("media_dlls=%s" % _format_media_facts(_windows_media_facts()))
+        except Exception:
+            lines.append("media_dlls=probe-failed")
     return "\n".join(lines) + "\n"

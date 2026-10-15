@@ -4,7 +4,16 @@
 
 ## Changelog
 
+### 2026-10-15（二）
+
+- **修复 #25 v0.3.4 run log 推翻编码假设后的终端修复：ffmpeg 直解回放兜底**。日志实证源本就是 H.264 High+AAC（兼容格式）仍 InvalidMedia+ResourceError → 根因重定性为**该机系统缺 DirectShow 解码组件**（学校机 N 版/精简镜像常见）；probe 只能读容器编码，读不出系统解码器有无。
+- `ffmpeg_player.py`：Qt 播放 ResourceError 后自动切换 bundled ffmpeg 直解路径——`-re` 实时限速双进程（rawvideo BGRA 帧 + s16le 44100/2ch PCM），VideoSurface(QImage/ARGB32) 重绘 + QAudioOutput(Qt5)/QAudioSink(Qt6) 播放，EOF 复用既有 end-of-media 循环语义；音频设备缺失降级视频单路并记日志。encoder_window 以 QStackedWidget 承载两路视频面，错误自动切换、状态栏提示「兼容播放」。
+- runlog 新增 Windows 媒体组件探针（quartz/msmpeg2vdec/msauddecm/mfplat/wmplayer 存在性），下份日志直接定位系统缺口。
+- 误报修正：源扫描测试把 Qt `QAudioOutput.open()` 误判为内建 `open()`，规则补属性调用排除（内建 open 不会以 `.open(` 出现）。
+- 版本 bump 0.3.5（`packaging/version.txt` 同步）。
+
 ### 2026-10-15
+
 
 - **修复 #23 ffprobe 路径推导缺陷（v0.3.3 转码修复在用户机器未触发的直接原因）**：用户回传 run log 实证 `probe-unavailable (stream copy fallback)`——`replace("ffmpeg","ffprobe")` 把打包布局 `...\ffmpeg\ffmpeg.exe` 的**目录名一并替换**成不存在的 `...\ffprobe\ffprobe.exe`，预检静默失败回退直通；同时日志实锤用户环境为 Win10 19045（此前系统截图未解开的悬案）、Qt5 media service 正常、播放错误为 InvalidMedia+ResourceError（空 errorString，典型缺解码器形态）。
 - 修复 = `ffprobe_path()`：按最后路径分隔符只换文件名（字符串推导，Windows 反斜杠路径在 macOS 开发/CI 侧行为一致，`Path.with_name` 在 POSIX 不认 `\` 会整串丢目录——单测抓住）；`probe_duration`/`probe_streams` 统一接入。

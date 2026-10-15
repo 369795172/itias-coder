@@ -133,3 +133,37 @@ class TestRunlog:
         assert len(remaining) == 5
         assert path in remaining
         assert "ITIAS-Coder-run-20260100-000000.log" not in [p.name for p in remaining]
+
+
+class TestFfmpegPlayerHelpers:
+    """#25 fallback player pure helpers."""
+
+    def test_parse_fps_fraction(self):
+        from itias_coder.ffmpeg_player import parse_fps
+
+        assert parse_fps("25/1") == 25.0
+        assert parse_fps("30000/1001") > 29.9
+        assert parse_fps("22/1") == 22.0
+
+    def test_parse_fps_garbage_defaults(self):
+        from itias_coder.ffmpeg_player import parse_fps
+
+        assert parse_fps("abc") == 25.0
+        assert parse_fps("") == 25.0
+        assert parse_fps("10/0") == 25.0
+
+    def test_even_size_and_frame_bytes(self):
+        from itias_coder.ffmpeg_player import even_size, frame_buffer_size
+
+        assert even_size(641, 361) == (640, 360)
+        assert even_size(0, 0) == (2, 2)
+        assert frame_buffer_size(640, 360) == 640 * 360 * 4
+        assert frame_buffer_size(0, 0) == 16
+
+    def test_read_exact_eof(self):
+        import io
+
+        from itias_coder.ffmpeg_player import _read_exact
+
+        assert _read_exact(io.BytesIO(b"ab"), 2) == b"ab"
+        assert _read_exact(io.BytesIO(b"a"), 2) is None
