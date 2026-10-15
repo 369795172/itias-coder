@@ -78,6 +78,28 @@ class TestNeedsTranscode:
         assert needs_transcode(streams)[0] is False
 
 
+class TestFfprobePath:
+    """#23: whole-string replace renamed the ffmpeg *directory* too on the
+    bundled Windows layout, silently breaking the codec pre-flight."""
+
+    def test_bundled_windows_layout_keeps_directory(self):
+        from itias_coder.slicer import ffprobe_path
+
+        assert ffprobe_path(r"C:\App\ITIAS-Coder\ffmpeg\ffmpeg.exe") == (
+            r"C:\App\ITIAS-Coder\ffmpeg\ffprobe.exe"
+        )
+
+    def test_posix_path(self):
+        from itias_coder.slicer import ffprobe_path
+
+        assert ffprobe_path("/opt/homebrew/bin/ffmpeg") == "/opt/homebrew/bin/ffprobe"
+
+    def test_bare_name(self):
+        from itias_coder.slicer import ffprobe_path
+
+        assert ffprobe_path("ffmpeg") == "ffprobe"
+
+
 class TestProbeStreamsFailure:
     def test_bogus_binary_returns_empty(self, tmp_path):
         assert slicer_module.probe_streams(str(tmp_path / "x.mp4"), "/nonexistent/ffmpeg") == []
