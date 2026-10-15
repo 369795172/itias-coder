@@ -4,6 +4,13 @@
 
 ## Changelog
 
+### 2026-10-15
+
+- **修复 #23 ffprobe 路径推导缺陷（v0.3.3 转码修复在用户机器未触发的直接原因）**：用户回传 run log 实证 `probe-unavailable (stream copy fallback)`——`replace("ffmpeg","ffprobe")` 把打包布局 `...\ffmpeg\ffmpeg.exe` 的**目录名一并替换**成不存在的 `...\ffprobe\ffprobe.exe`，预检静默失败回退直通；同时日志实锤用户环境为 Win10 19045（此前系统截图未解开的悬案）、Qt5 media service 正常、播放错误为 InvalidMedia+ResourceError（空 errorString，典型缺解码器形态）。
+- 修复 = `ffprobe_path()`：按最后路径分隔符只换文件名（字符串推导，Windows 反斜杠路径在 macOS 开发/CI 侧行为一致，`Path.with_name` 在 POSIX 不认 `\` 会整串丢目录——单测抓住）；`probe_duration`/`probe_streams` 统一接入。
+- 该缺陷自 `probe_duration` 起潜伏（旧症状 = 进度条总段数恒 0，无感），#21 将其变为承重路径后暴露——预检类逻辑的可观测性（runlog 记录 reason）正是这次能在无远程调试下定位的原因。
+- 版本 bump 0.3.4（`packaging/version.txt` 同步）。
+
 ### 2026-10-14
 
 - **修复 #21 v0.3.2 行为判断页黑屏无声（Win7 + 源视频 HEVC 直通切片不可解码）**：用户定向反馈四项证据齐（无 crash 日志 / 全黑无声 / App 流程存活 / 样本视频特征与手机 HEVC 竖屏源吻合）；根因 = `slicer.py` `-c copy` 直通保留源编码，Win7 股票 DirectShow 无 HEVC 解码器，且 `SegmentPlayer._last_error` 只存内存完全静默。
@@ -36,6 +43,8 @@
 
 ## Lessons Learned
 
+- 跨平台路径推导禁止整串 `replace`：打包布局里目录名与可执行名可能同名（`ffmpeg/ffmpeg.exe`），且 `pathlib` 在 POSIX 不认反斜杠——路径变换要用显式分隔符逻辑并用对方平台的路径形态写测试。
+- 用户侧「自证清白」的日志必须在第一天就有：v0.3.3 的 runlog 让 #23 在一次往返内定位（reason 字段直接指出 probe 失败），没有它就是又一轮猜测。
 - 直通（`-c copy`）交付的「能切片」不等于「App 内能播」：解码面在目标机系统（Win7 DirectShow），不在 ffmpeg。凡 stream copy，编码兼容性必须在切片前显式判定，而不是等播放失败再取证。
 - 转码切片必须 `-force_key_frames` 对齐段边界：segment muxer 只在关键帧切，编码器 GOP 是隐含合约，换编码器时要重签。
 - 每次运行写 run log 不是可选项：静默失败类 bug（播放、音频、图表降级）在没有现场日志时，用户侧「全黑没声音」就是全部信息，定位成本全压在猜测上。

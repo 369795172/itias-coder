@@ -31,9 +31,28 @@ def find_ffmpeg() -> Optional[str]:
     return None
 
 
+def ffprobe_path(ffmpeg_bin: str) -> str:
+    """Derive the ffprobe path from the ffmpeg binary path.
+
+    Only the file name may change: the bundled Windows layout is
+    ``.../ffmpeg/ffmpeg.exe`` where the directory itself is named ffmpeg,
+    so a whole-string replace would point at ``.../ffprobe/ffprobe.exe``
+    and silently break probing (#23). String-based split so Windows-style
+    backslash paths behave identically on the macOS dev/CI side.
+    """
+    for sep in ("/", "\\"):
+        if sep in ffmpeg_bin:
+            head, _, tail = ffmpeg_bin.rpartition(sep)
+            name = "ffprobe.exe" if tail.lower().endswith(".exe") else "ffprobe"
+            return head + sep + name
+    if ffmpeg_bin.lower().endswith(".exe"):
+        return "ffprobe.exe"
+    return "ffprobe"
+
+
 def probe_duration(video_path: str, ffmpeg_bin: str = "ffmpeg") -> Optional[float]:
     """Use ffprobe to get video duration in seconds."""
-    ffprobe = ffmpeg_bin.replace("ffmpeg", "ffprobe")
+    ffprobe = ffprobe_path(ffmpeg_bin)
     try:
         result = subprocess.run(
             [ffprobe, "-v", "error", "-show_entries", "format=duration",
@@ -47,7 +66,7 @@ def probe_duration(video_path: str, ffmpeg_bin: str = "ffmpeg") -> Optional[floa
 
 def probe_streams(video_path: str, ffmpeg_bin: str = "ffmpeg") -> list[dict]:
     """Use ffprobe to list streams (codec_name/codec_type/pix_fmt/profile)."""
-    ffprobe = ffmpeg_bin.replace("ffmpeg", "ffprobe")
+    ffprobe = ffprobe_path(ffmpeg_bin)
     try:
         result = subprocess.run(
             [ffprobe, "-v", "error",
