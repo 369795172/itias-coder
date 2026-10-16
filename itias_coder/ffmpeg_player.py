@@ -127,6 +127,7 @@ class FfmpegPlayer(QObject):
         self._video_proc: Optional[subprocess.Popen] = None
         self._audio_proc: Optional[subprocess.Popen] = None
         self._audio_output = None
+        self._audio_io = None
         self._frame_bytes = 0
         self._frame_w = 0
         self._frame_h = 0
@@ -135,6 +136,7 @@ class FfmpegPlayer(QObject):
         self._ended = False
         self._last_file: Optional[str] = None
         self._on_end_of_media = None
+        self._first_frame_logged = False
 
         self._timer = QTimer(self)
         self._timer.setInterval(30)
@@ -149,10 +151,19 @@ class FfmpegPlayer(QObject):
         self.stop()
         self._last_file = filepath
         width, height = even_size(*self._get_size())
+        if width < 160 or height < 90:
+            # Pre-layout geometry race on the freshly-switched surface (#25):
+            # a 2x2 scale target decodes "fine" and reads as a black screen.
+            runlog.log(
+                "ffplayer",
+                "target size %dx%d too small, using 640x360" % (width, height),
+            )
+            width, height = 640, 360
         self._frame_w, self._frame_h = width, height
         self._frame_bytes = frame_buffer_size(width, height)
         self._ended = False
         self._audio_queue = []
+        self._first_frame_logged = False
 
         common = ["-re", "-i", filepath, "-sn", "-dn"]
         video_cmd = [
@@ -206,10 +217,19 @@ class FfmpegPlayer(QObject):
                 self._audio_output.stop()
             except Exception:
                 pass
+        self._audio_io = None
 
     # ── internals ─────────────────────────────────────────────────────────
 
     def _create_audio_output(self):
+        """Return the push-mode QIODevice for both Qt stacks.
+
+        Qt5 QAudioOutput and Qt6 QAudioSink have different constructor
+        surfaces but the same push contract: start() returns the QIODevice
+        that accepts PCM writes. Neither class has a usable ``write()``
+        itself (Qt6 QAudioSink.write does not exist; Qt5 QAudioOutput.open
+        does not exist).
+        """
         from itias_coder import qt_bindings
 
         if qt_bindings.QT_API == 6:
@@ -221,6 +241,7 @@ class FfmpegPlayer(QObject):
             fmt.setSampleFormat(QAudioFormat.SampleFormat.Int16)
             sink = QAudioSink(fmt)
             sink.setBufferSize(16384)
+            self._audio_io = sink.start()
             return sink
 
         from PySide2.QtMultimedia import QAudioFormat, QAudioOutput
@@ -232,9 +253,9 @@ class FfmpegPlayer(QObject):
         fmt.setCodec("audio/pcm")
         fmt.setByteOrder(QAudioFormat.LittleEndian)
         fmt.setSampleType(QAudioFormat.SignedInt)
-        out = QAudioOutput()
+        out = QAudioOutput(fmt)
         out.setBufferSize(16384)
-        out.open(fmt)
+        self._audio_io = out.start()
         return out
 
     def _start_audio(self) -> None:
@@ -243,10 +264,14 @@ class FfmpegPlayer(QObject):
         try:
             if self._audio_output is None:
                 self._audio_output = self._create_audio_output()
-            self._audio_active = True
-            runlog.log("ffplayer", "audio pipeline started")
+            self._audio_active = self._audio_io is not None
+            runlog.log(
+                "ffplayer",
+                "audio pipeline started active=%s" % self._audio_active,
+            )
         except Exception as exc:
             self._audio_output = None
+            self._audio_io = None
             self._audio_active = False
             runlog.log("ffplayer", "audio unavailable (%s); video-only" % exc)
 
@@ -259,6 +284,14 @@ class FfmpegPlayer(QObject):
             frame = _read_exact(stream, self._frame_bytes)
             if frame is None:
                 break
+            if not self._first_frame_logged:
+                self._first_frame_logged = True
+                from itias_coder import runlog
+
+                runlog.log(
+                    "ffplayer",
+                    "first frame %dx%d (%d bytes)" % (self._frame_w, self._frame_h, len(frame)),
+                )
             self._surface.frameReady.emit(frame, self._frame_w, self._frame_h)
         if self._video_proc is proc:
             self._ended = True
@@ -277,11 +310,11 @@ class FfmpegPlayer(QObject):
     def _tick(self) -> None:
         from itias_coder import runlog
 
-        if self._audio_active and self._audio_output is not None:
+        if self._audio_active and self._audio_io is not None:
             while self._audio_queue:
                 chunk = self._audio_queue[0]
                 try:
-                    written = self._audio_output.write(chunk)
+                    written = self._audio_io.write(chunk)
                 except Exception as exc:
                     self._audio_active = False
                     runlog.log("ffplayer", "audio write failed (%s); video-only" % exc)
@@ -292,8 +325,12 @@ class FfmpegPlayer(QObject):
                     self._audio_queue[0] = chunk[written:]
                     break
                 self._audio_queue.pop(0)
-        if self._ended and not self._audio_queue:
-            self._timer.stop()
-            runlog.log("ffplayer", "end of media")
-            if self._on_end_of_media is not None:
-                self._on_end_of_media()
+        if self._ended:
+            # Orphaned audio chunks must never hold the end-of-media
+            # callback hostage; when audio is off the queue is dead weight.
+            if not self._audio_active or not self._audio_queue:
+                self._audio_queue.clear()
+                self._timer.stop()
+                runlog.log("ffplayer", "end of media")
+                if self._on_end_of_media is not None:
+                    self._on_end_of_media()
