@@ -4,7 +4,15 @@
 
 ## Changelog
 
+### 2026-10-16（二）
+
+- **修复 #25 终章：兜底引擎全链路在她机器已跑通，黑屏锁定在绘制层**。v0.3.6 run log 实证：spawn 688×502、first frame 逐圈到达、end-of-media 3s 实时节奏正确、media_dlls 揭示 msauddecm=0（系统缺 AAC 解码器 → DShow 整图建不起来了，这才是 Qt 路径连 H.264 都 ResourceError 的原始病因）。她仍见黑屏 → 帧到了画不出来：**PySide2 QImage 拒绝不可变 bytes 缓冲区**（null image），而离屏测试只数了帧没断言真实 paint——测试盲区，不是代码对了。
+- 修复：`VideoSurface._on_frame` 存可写 `bytearray` 拷贝 + `isNull()` 守卫；音频重启（stop() 后 replay 需重开 push device，此前只有第一圈有声）。
+- 测试补盲区：`test_ffplayer_integration.py`（Layer 2，dev 机）：widget 真实 show + paintEvent 计数断言「有帧必画」，帧数 alone 不再算证据。
+- 版本 bump 0.3.7（`packaging/version.txt` 同步）。
+
 ### 2026-10-16
+
 
 - **修复 #25 兜底播放器三缺陷（本机 18s 合成视频离屏集成测试实证）**：①音频双栈 API 写错（Qt5 `QAudioOutput.open()` 不存在、Qt6 应写 `start()` 返回的 QIODevice）→ 两栈一律静音；②收尾死锁：音频线程孤儿队列无 drain 通道，`end of media` 永不触发、循环断；③几何竞态：切兜底后立即取 `currentWidget().width()`，布局未完成得 0 → `scale=2:2` → 2×2 像素「视频」肉眼看即黑屏（与用户「一直是黑屏在调」症状吻合，高度疑似她机器实况）。
 - 修复：统一 push-mode 写 `start()` 返回的 QIODevice；尺寸钳制（<160×90 回落 640×360 并记日志）；孤儿队列在 video-EOF 时直接清除；新增首帧到达日志（`first frame WxH`）让下份日志一锤定音。

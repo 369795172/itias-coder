@@ -92,7 +92,11 @@ class VideoSurface(QObject):
         return self._qwidget
 
     def _on_frame(self, data: bytes, width: int, height: int) -> None:
-        self._image = data
+        # PySide2 QImage rejects immutable bytes buffers (null image -> the
+        # widget paints nothing but the pipeline logs healthy frames, the
+        # exact "black screen with a working log" the user reported); a
+        # writable bytearray copy is the documented cross-version contract.
+        self._image = bytearray(data)
         self._size = (width, height)
         self._qwidget.update()
 
@@ -107,6 +111,8 @@ class VideoSurface(QObject):
                     self._image, self._size[0], self._size[1],
                     self._size[0] * 4, QImage.Format_ARGB32,
                 )
+                if img.isNull():
+                    return
                 painter.drawImage(self._qwidget.rect(), img)
         finally:
             painter.end()
@@ -264,6 +270,9 @@ class FfmpegPlayer(QObject):
         try:
             if self._audio_output is None:
                 self._audio_output = self._create_audio_output()
+            else:
+                # stop() tore down the push device; replay must reopen it.
+                self._audio_io = self._audio_output.start()
             self._audio_active = self._audio_io is not None
             runlog.log(
                 "ffplayer",
