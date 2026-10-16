@@ -4,7 +4,16 @@
 
 ## Changelog
 
+### 2026-10-16
+
+- **修复 #25 兜底播放器三缺陷（本机 18s 合成视频离屏集成测试实证）**：①音频双栈 API 写错（Qt5 `QAudioOutput.open()` 不存在、Qt6 应写 `start()` 返回的 QIODevice）→ 两栈一律静音；②收尾死锁：音频线程孤儿队列无 drain 通道，`end of media` 永不触发、循环断；③几何竞态：切兜底后立即取 `currentWidget().width()`，布局未完成得 0 → `scale=2:2` → 2×2 像素「视频」肉眼看即黑屏（与用户「一直是黑屏在调」症状吻合，高度疑似她机器实况）。
+- 修复：统一 push-mode 写 `start()` 返回的 QIODevice；尺寸钳制（<160×90 回落 640×360 并记日志）；孤儿队列在 video-EOF 时直接清除；新增首帧到达日志（`first frame WxH`）让下份日志一锤定音。
+- 主窗口标题带版本号：用户截图自证所装版本，消灭「不知道她装的是哪版」这个往返。
+- 用户侧时间线：10-15 17:23 收到 v0.3.5，10-16 上午测 18 秒视频仍黑屏（未回传日志，此轮修复由本机集成测试驱动，不再等一轮往返）。
+- 版本 bump 0.3.6（`packaging/version.txt` 同步）。
+
 ### 2026-10-15（二）
+
 
 - **修复 #25 v0.3.4 run log 推翻编码假设后的终端修复：ffmpeg 直解回放兜底**。日志实证源本就是 H.264 High+AAC（兼容格式）仍 InvalidMedia+ResourceError → 根因重定性为**该机系统缺 DirectShow 解码组件**（学校机 N 版/精简镜像常见）；probe 只能读容器编码，读不出系统解码器有无。
 - `ffmpeg_player.py`：Qt 播放 ResourceError 后自动切换 bundled ffmpeg 直解路径——`-re` 实时限速双进程（rawvideo BGRA 帧 + s16le 44100/2ch PCM），VideoSurface(QImage/ARGB32) 重绘 + QAudioOutput(Qt5)/QAudioSink(Qt6) 播放，EOF 复用既有 end-of-media 循环语义；音频设备缺失降级视频单路并记日志。encoder_window 以 QStackedWidget 承载两路视频面，错误自动切换、状态栏提示「兼容播放」。

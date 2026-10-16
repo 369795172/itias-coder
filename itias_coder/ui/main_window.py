@@ -21,7 +21,9 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ITIAS Coder — 课堂互动分析编码工具")
+        from .. import __version__
+
+        self.setWindowTitle(f"ITIAS Coder v{__version__} — 课堂互动分析编码工具")
         self.setMinimumSize(480, 420)
         self._settings = QSettings("ITIAS-Coder", "itias-coder")
         self._build_ui()
