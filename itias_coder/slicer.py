@@ -5,10 +5,26 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Callable, Optional
 
 from itias_coder.qt_bindings import QObject, QSettings, QThread, Signal
+
+
+def no_window_creationflags() -> int:
+    """Windows-only Popen flags so console children spawn windowless.
+
+    ffmpeg.exe is a console application; without ``CREATE_NO_WINDOW``
+    (0x08000000) every spawned process allocates a fresh black console
+    window that steals foreground focus. The fallback player spawns two
+    processes per segment, so black windows popped up every few seconds
+    and could not be moved out of the way (user report 2026-10-19).
+    POSIX Popen accepts the kwarg only with value 0, hence the guard.
+    """
+    if sys.platform == "win32":
+        return subprocess.CREATE_NO_WINDOW
+    return 0
 
 
 def find_ffmpeg() -> Optional[str]:
@@ -212,6 +228,7 @@ class SliceWorker(QObject):
                 text=True,
                 encoding="utf-8",
                 errors="replace",
+                creationflags=no_window_creationflags(),
             )
 
             # Parse ffmpeg stderr for time= to show progress

@@ -183,14 +183,18 @@ class FfmpegPlayer(QObject):
             "pipe:1",
         ]
         runlog.log("ffplayer", "spawn %dx%d %s" % (width, height, filepath))
+        from .slicer import no_window_creationflags
+
         try:
             self._video_proc = subprocess.Popen(
                 video_cmd, stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+                creationflags=no_window_creationflags(),
             )
             self._audio_proc = subprocess.Popen(
                 audio_cmd, stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+                creationflags=no_window_creationflags(),
             )
         except OSError as exc:
             runlog.log("ffplayer", "ERROR spawn failed: %s" % exc)

@@ -4,6 +4,12 @@
 
 ## Changelog
 
+### 2026-10-20（一）
+
+- **修复播放期黑色控制台窗口抢占遮挡（她 10-19 报的「黑色弹窗遮住打点窗口、移走还会跳回来」）**。根因：兜底播放引擎每段切片 spawn 两个 ffmpeg.exe（视频+音频），Windows 上控制台子进程默认分配新控制台窗口并抢前台——每 ~3 秒两个黑窗口轮番弹出，正是她说的「这两个窗口」，v0.3.7 播放跑通后问题才显形（此前黑屏阶段无窗口可谈）。修复：`slicer.no_window_creationflags()`（Win32 `CREATE_NO_WINDOW` 0x08000000，POSIX 返回 0），player 双进程与切片进程统一接入；stdout/stderr 管道不受影响。
+- 测试：新增 `tests/test_no_console_windows.py`（Layer 1 源码扫描：包内所有 `subprocess.Popen` 必须带 `creationflags=`，防回归）；macOS Layer 2 集成测试实证 `creationflags=0` 无 POSIX 回归。
+- 版本 bump 0.3.8（`packaging/version.txt` 同步）。
+
 ### 2026-10-16（二）
 
 - **修复 #25 终章：兜底引擎全链路在她机器已跑通，黑屏锁定在绘制层**。v0.3.6 run log 实证：spawn 688×502、first frame 逐圈到达、end-of-media 3s 实时节奏正确、media_dlls 揭示 msauddecm=0（系统缺 AAC 解码器 → DShow 整图建不起来了，这才是 Qt 路径连 H.264 都 ResourceError 的原始病因）。她仍见黑屏 → 帧到了画不出来：**PySide2 QImage 拒绝不可变 bytes 缓冲区**（null image），而离屏测试只数了帧没断言真实 paint——测试盲区，不是代码对了。
